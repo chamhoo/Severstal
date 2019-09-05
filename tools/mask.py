@@ -10,7 +10,7 @@ def rle2mask(rle, height, width):
     rle = [int(i) for i in rle.strip().split()]
     for start, lengeth in zip(rle[0::2], rle[1::2]):
         mask[start-1: start+lengeth-1] = 1
-    return mask.reshape((height, width), order='F')
+    return mask.reshape((height, width, 1), order='F')
 
 
 def mask2rle(mask):
@@ -44,7 +44,7 @@ def plotmask(iminfo, image, figsize):
     for ClassId, rle in iminfo.items():
         rgblayer = class2rgb[ClassId]
         masklayer = list({0, 1, 2}-set(rgblayer))
-        mask = rle2mask(rle, height, width)[:, :, np.newaxis]
+        mask = rle2mask(rle, height, width)
         image_mask[:, :, rgblayer] *= np.repeat(1 - mask, len(rgblayer), axis=2)
         img = image_mask[:, :, masklayer]
         msk = np.repeat(mask, len(masklayer), axis=2)
