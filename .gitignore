@@ -18,3 +18,6 @@ __pycache__/
 # tmp
 tmp/
 !temp/README.md
+
+# MacOS support
+*/.DS_Store
