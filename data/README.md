@@ -5,7 +5,7 @@ Detection** to download the dataset
 ***Linux:***   
 You execute the following command in the terminal.
 
-    cd Serverstal/Data  
+    cd Serverstal/data  
     mv /path/to/severstal-steel-defect-detection.zip severstal-steel-defect-detection.zip  
     unzip severstal-steel-defect-detection.zip
     chmod -R 777 *   

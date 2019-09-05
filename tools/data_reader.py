@@ -37,7 +37,7 @@ class DataReader(object):
                     if ClassId == '1':
                         csv_gen[0] = cv2.imread(os.path.join(train_path, img)).tobytes()
                     if ClassId == '4':
-                        # csv_gen[1] = self.__mklabel(csv_gen[1])
+                        # csv_gen[1] = self.__mklabel(csv_gen[1]).tobytes()
                         csv_gen[1] = bytes(str(csv_gen[1]), encoding='utf-8')
                         yield csv_gen
                         csv_gen = [None, []]
