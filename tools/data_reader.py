@@ -34,10 +34,11 @@ class DataReader(object):
                 else:
                     csv_gen[1].append(rle)
                     if ClassId == '1':
-                        csv_gen[0] = cv2.imread(os.path.join(train_path, img)).tobytes()
+                        csv_gen[0] = bytes(img, encoding='utf-8')
+                        # csv_gen[0] = cv2.imread(os.path.join(train_path, img)).tobytes()
                     if ClassId == '4':
-                        # csv_gen[1] = self.__mklabel(csv_gen[1]).tobytes()
-                        csv_gen[1] = bytes(str(csv_gen[1]), encoding='utf-8')
+                        csv_gen[1] = self.__mklabel(csv_gen[1])
+                        # csv_gen[1] = bytes(str(csv_gen[1]), encoding='utf-8')
                         yield csv_gen
                         csv_gen = [None, []]
 
@@ -60,7 +61,14 @@ class DataReader(object):
     def __btye_feature(self, value):
         return tf.train.Feature(bytes_list=tf.train.BytesList(value=[value]))
 
-    def write_tfr(self, data_generator, count, tfrpath, haslabel=True, shards=1000):
+    def compression_tfr(self, compression_type='', c_level=None):
+        """
+        :param compression_type: 'GZIP', 'ZLIB' or ''
+        """
+        return tf.io.TFRecordOptions(compression_type=compression_type, compression_level=c_level)
+
+    def write_tfr(self, data_generator, count, tfrpath, haslabel=True, shards=1000,
+                  compression=None, c_level=None):
         """
 
         :param data_generator:
@@ -68,8 +76,10 @@ class DataReader(object):
         :param tfrpath:
         :param haslabel:
         :param shards:
+        :param compression:
         :return:
         """
+        options = self.compression_tfr(compression, c_level=c_level)
         # base on num_shards & count, build a slice list
         if shards <= 100:
             num_shards, step = int(shards), int(np.ceil(count/shards))
@@ -80,12 +90,11 @@ class DataReader(object):
         dir_path = os.path.join('..', 'tmp', 'TFRecords', f'{tfrpath}')
         if os.path.exists(dir_path):
             shutil.rmtree(dir_path)
-            print('rm old dir')
         os.makedirs(dir_path)
 
         for num in range(num_shards):
             tfr_path = os.path.join(dir_path, '%03d-of-%03d' % (num, num_shards))
-            writer = tf.io.TFRecordWriter(tfr_path)
+            writer = tf.io.TFRecordWriter(tfr_path, options=options)
             # write TFRecords file.
             try:
                 for _ in tqdm(range(step)):
@@ -111,4 +120,4 @@ class DataReader(object):
                 writer.close()
 
     def readtfrecorde(self):
-         pass
+        pass
