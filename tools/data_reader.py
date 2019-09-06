@@ -5,7 +5,6 @@ import shutil
 import numpy as np
 import tensorflow as tf
 from tqdm import tqdm
-from PIL import Image
 from functools import reduce
 from tools.mask import rle2mask
 
@@ -89,7 +88,7 @@ class DataReader(object):
             writer = tf.io.TFRecordWriter(tfr_path)
             # write TFRecords file.
             try:
-                for i in tqdm(range(step)):
+                for _ in tqdm(range(step)):
                     samples = next(data_generator)
                     # build feature
                     if haslabel:
@@ -101,10 +100,15 @@ class DataReader(object):
                     # build example
                     exmaple = tf.train.Example(features=tf.train.Features(feature=feature))
                     writer.write(exmaple.SerializeToString())
+
+            # 如果全部数据迭代完成，利用 except 阻止抛出错误，并结束迭代。
+            # If all data is iteratively completed, use the "except" to
+            # prevent throwing errors and end the iteration.
             except StopIteration:
                 pass
+
             finally:
                 writer.close()
 
     def readtfrecorde(self):
-        pass
+         pass
