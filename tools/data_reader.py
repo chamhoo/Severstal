@@ -11,6 +11,15 @@ from tools.mask import rle2mask
 
 
 class DataReader(object):
+    def __init__(self):
+        self.__seed = 18473
+
+    def seed(self, seed):
+        self.__seed = seed
+
+    def output_seed(self):
+        return self.__seed
+
     def read_train(self, path, train_path, height, width, col=False, sep=','):
         """
         read csv file to generator
@@ -141,11 +150,25 @@ class DataReader(object):
             finally:
                 writer.close()
 
+    def _pseudo_random(self, a, b):
+        """
+        Linear congruential generator
+        - https://en.wikipedia.org/wiki/Linear_congruential_generator
+        """
+        m = 2 ** 32
+        seed = self.seed
+        while True:
+            nextseed = (a * seed + b) % m
+            yield nextseed
+            seed = nextseed
+
     def parser(self):
         pass
 
     def readtfrecorde(self, feature_dict, tfr_path, shuffle, compression, c_level):
+        files = tf.train.im
         files = tf.train.match_filenames_once(tfr_path)
         self.dataset = tf.data.TFRecordDataset(files)
+
 
 
