@@ -11,7 +11,7 @@ from tools.data_reader import DataReader
 class Preprocess(DataReader):
 
     def convert_image_dtype(self, dtype):
-        self.dataset = self.dataset.map(lambda img, label: (
+        self.train_dataset = self.train_dataset.map(lambda img, label: (
             tf.image.convert_image_dtype(img, dtype=dtype),
             tf.image.convert_image_dtype(label, dtype=dtype)))
 
@@ -22,17 +22,17 @@ class Preprocess(DataReader):
         BILINEAR = 0
         NEAREST_NEIGHBOR = 1
         """
-        self.dataset = self.dataset.map(lambda img, label: (
+        self.train_dataset = self.train_dataset.map(lambda img, label: (
             tf.image.resize_images(img, size=size, method=method),
             tf.image.resize_images(label, size=size, method=method)))
 
     def flip_up_down(self):
-        self.dataset = self.dataset.map(lambda img, label: (
+        self.train_dataset = self.train_dataset.map(lambda img, label: (
             tf.image.flip_up_down(img),
             tf.image.flip_up_down(label)))
 
     def flip_left_right(self):
-        self.dataset = self.dataset.map(lambda img, label: (
+        self.train_dataset = self.train_dataset.map(lambda img, label: (
             tf.image.flip_left_right(img),
             tf.image.flip_left_right(label)))
 
@@ -40,7 +40,7 @@ class Preprocess(DataReader):
         """
         Transpose image(s) by swapping the height and width dimension.
         """
-        self.dataset = self.dataset.map(lambda img, label: (
+        self.train_dataset = self.train_dataset.map(lambda img, label: (
             tf.image.transpose_image(img),
             tf.image.transpose_image(label)))
 
@@ -63,7 +63,7 @@ class Preprocess(DataReader):
         elif delta <= -1:
             delta = -1
 
-        self.dataset = self.dataset.map(lambda img, _: (tf.image.adjust_brightness(img, delta), _))
+        self.train_dataset = self.train_dataset.map(lambda img, _: (tf.image.adjust_brightness(img, delta), _))
 
     def contrast(self, contrast_factor):
         """
@@ -79,7 +79,7 @@ class Preprocess(DataReader):
         and then adjusts each component x of each pixel to (x - mean) * contrast_factor + mean.
 
         """
-        self.dataset = self.dataset.map(lambda img, _: (tf.image.adjust_contrast(img, contrast_factor), _))
+        self.train_dataset = self.train_dataset.map(lambda img, _: (tf.image.adjust_contrast(img, contrast_factor), _))
 
     def hue(self, delta):
         """
@@ -96,7 +96,7 @@ class Preprocess(DataReader):
         elif delta <= -1:
             delta = -1
 
-        self.dataset = self.dataset.map(lambda img, _: (tf.image.adjust_hue(img, delta), _))
+        self.train_dataset = self.train_dataset.map(lambda img, _: (tf.image.adjust_hue(img, delta), _))
 
     def saturation(self, saturation_factor):
         """
@@ -106,7 +106,8 @@ class Preprocess(DataReader):
         the images to HSV and multiplying the saturation (S) channel by saturation_factor
         and clipping. The images are then converted back to RGB.
         """
-        self.dataset = self.dataset.map(lambda img, _: (tf.image.adjust_saturation(img, saturation_factor), _))
+        self.train_dataset = self.train_dataset.map(lambda img, _:
+                                                    (tf.image.adjust_saturation(img, saturation_factor), _))
 
     def standardization(self):
         """
@@ -119,4 +120,4 @@ class Preprocess(DataReader):
         stddev is the standard deviation of all values in image.
         It is capped away from zero to protect against division by 0 when handling uniform images.
         """
-        self.dataset = self.dataset.map(lambda img, _: (tf.image.per_image_standardization(img), _))
+        self.train_dataset = self.train_dataset.map(lambda img, _: (tf.image.per_image_standardization(img), _))

@@ -47,10 +47,10 @@ class DataReader(object):
                     csv_gen['label'].append(rle)
                     if ClassId == '1':
                         # csv_gen['img'] = bytes(img, encoding='utf-8')
-                        csv_gen['img'] = cv2.imread(os.path.join(train_path, img)).tobytes()
+                        csv_gen['img'] = cv2.imread(os.path.join(train_path, img)).tostring()
                     if ClassId == '4':
                         now = time()
-                        csv_gen['label'] = self.__mklabel(csv_gen['label']).tobytes()
+                        csv_gen['label'] = self.__mklabel(csv_gen['label']).tostring()
                         # csv_gen['label'] = bytes(str(csv_gen['label']), encoding='utf-8')
                         targettime += (time() - now)
                         yield csv_gen
@@ -162,13 +162,27 @@ class DataReader(object):
             yield nextseed
             seed = nextseed
 
-    def parser(self):
-        pass
+    def __parser(self, record, features):
+        return tf.io.parse_single_example(record, features=features)
 
-    def readtfrecorde(self, feature_dict, tfr_path, shuffle, compression, c_level):
-        files = tf.train.im
-        files = tf.train.match_filenames_once(tfr_path)
+    def readtfrecorde(self, feature_dict, decode_raw, tfr_path, shuffle_buffer, num_valid, compression):
+        random_gen = self._pseudo_random(214013, 2531011)
+        files = tf.io.match_filenames_once(tfr_path)
+
+        features = {}
+        for key, _type in feature_dict.items():
+            features[key] = self.__fix_len_feature(_type)
+
         self.dataset = tf.data.TFRecordDataset(files)
+        self.dataset = self.dataset.map(lambda raw: tf.parse_single_example(raw, features=features))
+        self.dataset = self.dataset.map(decode_raw)
+        self.dataset = self.dataset.shuffle(shuffle_buffer, seed=next(random_gen))
+
+        self.valid_dataset = self.dataset.take(num_valid)
+        self.train_dataset = self.dataset.skip(num_valid)
+
+
+
 
 
 
