@@ -32,7 +32,6 @@ class DataReader(object):
         self.height = height
         self.width = width
         self.col = col
-        targettime = 0
         totoaltime = time()
 
         csv_gen, numlen = {'img': None, 'label': []}, 0
@@ -46,17 +45,11 @@ class DataReader(object):
                 else:
                     csv_gen['label'].append(rle)
                     if ClassId == '1':
-                        # csv_gen['img'] = bytes(img, encoding='utf-8')
                         csv_gen['img'] = cv2.imread(os.path.join(train_path, img)).tostring()
                     if ClassId == '4':
-                        now = time()
                         csv_gen['label'] = self.__mklabel(csv_gen['label']).tostring()
-                        # csv_gen['label'] = bytes(str(csv_gen['label']), encoding='utf-8')
-                        targettime += (time() - now)
                         yield csv_gen
                         csv_gen = {'img': None, 'label': []}
-
-        print(targettime)
         print(time() - totoaltime)
 
     def read_test(self, test_path):
@@ -85,7 +78,7 @@ class DataReader(object):
 
     def __fix_len_feature(self, _type):
         if _type == 'bytes':
-            return tf.io.FixedLenFeature([], tf.strings)
+            return tf.io.FixedLenFeature([], tf.string)
         if _type == 'int':
             return tf.io.FixedLenFeature([], tf.int64)
         if _type == 'float':
@@ -126,7 +119,7 @@ class DataReader(object):
         os.makedirs(dir_path)
 
         for num in range(num_shards):
-            tfr_path = os.path.join(dir_path, '%03d-of-%03d.tfrecords' % (num, num_shards))
+            tfr_path = os.path.join(dir_path, '%03d-of-%03d.tfrecord' % (num, num_shards))
             writer = tf.io.TFRecordWriter(tfr_path, options=options)
             # write TFRecords file.
             try:
