@@ -155,9 +155,6 @@ class DataReader(object):
             yield nextseed
             seed = nextseed
 
-    def __parser(self, record, features):
-        return tf.io.parse_single_example(record, features=features)
-
     def readtfrecorde(self, feature_dict, decode_raw, tfr_path, shuffle_buffer, num_valid, compression):
         random_gen = self._pseudo_random(214013, 2531011)
         files = tf.io.match_filenames_once(tfr_path)
