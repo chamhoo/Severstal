@@ -5,15 +5,10 @@ auther: LeeCHH
 
 import numpy as np
 import tensorflow as tf
-from tools.data_reader import DataReader
+from tools.data_tfr import TFR
 
 
-class Preprocess(DataReader):
-
-    def convert_image_dtype(self, dtype):
-        self.train_dataset = self.train_dataset.map(lambda img, label: (
-            tf.image.convert_image_dtype(img, dtype=dtype),
-            tf.image.convert_image_dtype(label, dtype=dtype)))
+class Preprocess(TFR):
 
     def resize(self, size, method):
         """

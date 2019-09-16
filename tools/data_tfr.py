@@ -1,16 +1,15 @@
-import re
+"""
+auther: leechh
+"""
 import os
-import cv2
 import shutil
 import numpy as np
 import tensorflow as tf
 from tqdm import tqdm
-from time import time
-from functools import reduce
-from tools.mask import rle2mask
+from tools.data_gen import DataGen
 
 
-class DataReader(object):
+class TFR(DataGen):
     def __init__(self):
         self.__seed = 18473
 
@@ -19,54 +18,6 @@ class DataReader(object):
 
     def output_seed(self):
         return self.__seed
-
-    def read_train(self, path, train_path, height, width, col=False, sep=','):
-        """
-        read csv file to generator
-        :param path: str, Path of the csv file.
-        :param col: False(Bool) or list, if False, This mean that the col information is
-         contained in the csv file. if not contained, You need to set col_name manually.
-        :param sep: str, default ',' Delimiter to use.
-        :return: generator
-        """
-        self.height = height
-        self.width = width
-        self.col = col
-        totoaltime = time()
-
-        csv_gen, numlen = {'img': None, 'label': []}, 0
-        with open(path) as file:
-            for line in file:
-                line = re.split(sep, line.strip())
-                img, ClassId, rle = line
-                numlen += 1
-                if (numlen == 1) & (not col):
-                    self.col = line
-                else:
-                    csv_gen['label'].append(rle)
-                    if ClassId == '1':
-                        csv_gen['img'] = cv2.imread(os.path.join(train_path, img)).tostring()
-                    if ClassId == '4':
-                        csv_gen['label'] = self.__mklabel(csv_gen['label']).tostring()
-                        yield csv_gen
-                        csv_gen = {'img': None, 'label': []}
-        print(time() - totoaltime)
-
-    def read_test(self, test_path):
-        # test generator
-        for path in os.listdir(test_path):
-            if self.__isimg(path):
-                yield {'img': cv2.imread(os.path.join(test_path, path))}
-
-    def __isimg(self, path):
-        return os.path.splitext(path)[1] in ['.png', '.jpg']
-
-    def count(self, path):
-        return reduce(lambda x, y: x+y, [self.__isimg(i) for i in os.listdir(path)])
-
-    def __mklabel(self, rle):
-        label_lst = [rle2mask(i, self.height, self.width) for i in rle]
-        return np.concatenate(label_lst, axis=2)
 
     def __type_feature(self, _type, value):
         if _type == 'bytes':
@@ -167,10 +118,6 @@ class DataReader(object):
         self.dataset = self.dataset.map(lambda raw: tf.parse_single_example(raw, features=features))
         self.dataset = self.dataset.map(decode_raw)
         self.dataset = self.dataset.shuffle(shuffle_buffer, seed=next(random_gen))
-
-        self.valid_dataset = self.dataset.take(num_valid)
-        self.train_dataset = self.dataset.skip(num_valid)
-
 
 
 
