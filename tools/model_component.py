@@ -46,7 +46,7 @@ class Layers(object):
             conv = tf.nn.bias_add(conv, b)
             return tf.nn.dropout(conv, rate=rate)
 
-    def upconv2d(self, x, w, b, strids, padding='SAME', name='upconv2d'):
+    def deconv2d(self, x, w, b, strids, padding='SAME', name='upconv2d'):
         with tf.name_scope(name):
             x_shape = tf.shape(x)
             output_shape = tf.stack([x_shape[0], x_shape[1] * 2, x_shape[2] * 2, x_shape[3] // 2])
@@ -56,19 +56,19 @@ class Layers(object):
                 strides=[1, strids, strids, 1],
                 padding=padding,
                 name='upconv')
-            return upconv
+            return tf.nn.bias_add(upconv, b)
 
     def maxpooling(self, x, n, padding='SAME'):
         return tf.nn.max_pool(x, ksize=[1, n, n, 1], strides=[1, n, n, 1], padding=padding)
 
     def concat(self, x_down, x_up):
-        x_down_shape = tf.shape(x_down)   # (batch, down_height, down_width, down_channels)
-        x_up_shape = tf.shape(x_up)       # (batch, up_height, up_width, up_channels)
+        x_down_shape = tf.shape(x_down)   # (batch, down_height, down_width, down_features)
+        x_up_shape = tf.shape(x_up)       # (batch, up_height, up_width, up_features)
         x_down_slice = tf.slice(
             x_down,
             begin=[0, (x_down_shape[1] - x_up_shape[1]) // 2, (x_down_shape[2] - x_up_shape[2]) // 2, 0],
             size=[-1, x_up_shape[1], x_up_shape[2], -1])
-        # (batch, up_height, up_width, up_channels + down_channels)
+        # (batch, up_height, up_width, up_features + down_features)
         return tf.concat([x_down_slice, x_up], axis=3)
 
 class ModelComponent(object):
