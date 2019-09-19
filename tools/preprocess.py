@@ -1,25 +1,12 @@
 """
 auther: LeeCHH
 """
-
-
 import numpy as np
 import tensorflow as tf
-from tools.data_tfr import TFR
+from tools.data_gen import TFR
 
 
 class Preprocess(TFR):
-
-    def resize(self, size, method):
-        """
-        AREA = 3
-        BICUBIC = 2
-        BILINEAR = 0
-        NEAREST_NEIGHBOR = 1
-        """
-        self.train_dataset = self.train_dataset.map(lambda img, label: (
-            tf.image.resize_images(img, size=size, method=method),
-            tf.image.resize_images(label, size=size, method=method)))
 
     def flip_up_down(self):
         self.train_dataset = self.train_dataset.map(lambda img, label: (

@@ -12,6 +12,8 @@ from tools.data_gen import DataGen
 class TFR(DataGen):
     def __init__(self):
         self.__seed = 18473
+        self.random_gen = self._pseudo_random(214013, 2531011)
+
 
     def seed(self, seed):
         self.__seed = seed
@@ -33,13 +35,18 @@ class TFR(DataGen):
         if _type == 'int':
             return tf.io.FixedLenFeature([], tf.int64)
         if _type == 'float':
-            return tf.io.FixedLenFeature([], tf.int64)
+            return tf.io.FixedLenFeature([], tf.float32)
 
     def __compression_tfr(self, compression_type='', c_level=None):
         """
         :param compression_type: 'GZIP', 'ZLIB' or ''
         """
         return tf.io.TFRecordOptions(compression_type=compression_type, compression_level=c_level)
+
+    def mkdir(self, path):
+        if os.path.exists(path):
+            shutil.rmtree(path)
+        os.makedirs(path)
 
     def write_tfr(self, data_generator, count, tfrpath, feature_dict, shards=1000,
                   compression=None, c_level=None):
@@ -65,9 +72,7 @@ class TFR(DataGen):
 
         # update dir
         dir_path = os.path.join('..', 'tmp', 'TFRecords', f'{tfrpath}')
-        if os.path.exists(dir_path):
-            shutil.rmtree(dir_path)
-        os.makedirs(dir_path)
+        self.mkdir(dir_path)
 
         for num in range(num_shards):
             tfr_path = os.path.join(dir_path, '%03d-of-%03d.tfrecord' % (num, num_shards))
@@ -89,7 +94,7 @@ class TFR(DataGen):
             # If all data is iteratively completed, use the "except" to
             # prevent throwing errors and end the iteration.
             except StopIteration:
-                pass
+                break
 
             finally:
                 writer.close()
@@ -100,25 +105,72 @@ class TFR(DataGen):
         - https://en.wikipedia.org/wiki/Linear_congruential_generator
         """
         m = 2 ** 32
-        seed = self.seed
+        seed = self.__seed
         while True:
             nextseed = (a * seed + b) % m
             yield nextseed
             seed = nextseed
 
-    def readtfrecorde(self, feature_dict, decode_raw, tfr_path, shuffle_buffer, num_valid, compression):
-        random_gen = self._pseudo_random(214013, 2531011)
+    def readtfrecorde(self, feature_dict, decode_raw, tfr_path, shuffle_buffer, compression):
         files = tf.io.match_filenames_once(tfr_path)
 
         features = {}
         for key, _type in feature_dict.items():
             features[key] = self.__fix_len_feature(_type)
 
-        self.dataset = tf.data.TFRecordDataset(files)
-        self.dataset = self.dataset.map(lambda raw: tf.parse_single_example(raw, features=features))
-        self.dataset = self.dataset.map(decode_raw)
-        self.dataset = self.dataset.shuffle(shuffle_buffer, seed=next(random_gen))
+        dataset = tf.data.TFRecordDataset(files, compression_type=compression)
+        dataset = dataset.map(lambda raw: tf.io.parse_single_example(raw, features=features))
+        dataset = dataset.map(decode_raw)
+        dataset = dataset.shuffle(shuffle_buffer, seed=next(self.random_gen))
+        return dataset
 
+    def readtrain(self, rt_params, train_path, num_valid, epoch, batch_size, reshape=None, reshape_method=None):
+        # parameter
+        self.epoch = epoch
+        self.batch_size = batch_size
+        self.reshape = reshape
+        self.reshape_method  = reshape_method
+
+        # read tfrecord
+        dataset = self.readtfrecorde(**rt_params)
+        if self.reshape is None:
+            dataset = self.resize(dataset, reshape, reshape_method)
+
+        # num_valid & count
+        if num_valid <= 1:
+            num_valid = int(self.train_count * num_valid)
+
+        self.train_count = self.count(train_path) - num_valid
+        self.valid_count = num_valid
+
+        # train & valid dataset
+        train_dataset = dataset.skip(num_valid)
+        train_dataset = train_dataset.batch(self.batch_size).repeat(2 * self.epoch)
+        self.train_iterator = train_dataset.make_initializable_iterator()
+        self.train_img, self.train_label = self.train_iterator.get_next()
+
+        valid_dataset = dataset.take(num_valid)
+        valid_dataset = valid_dataset.batch(self.batch_size).repeat(self.epoch)
+        self.valid_iterator = valid_dataset.make_initializable_iterator()
+        self.valid_img, self.valid_label = self.valid_iterator.get_next()
+
+
+    def readtest(self, rt_params, test_path):
+        # count
+        self.test_count = self.count(test_path)
+
+        self.test_dataset, self.test_count = self.readtfrecorde(**rt_params)
+
+    def resize(self, dataset, size, method):
+        """
+        AREA = 3
+        BICUBIC = 2
+        BILINEAR = 0
+        NEAREST_NEIGHBOR = 1
+        """
+        dataset = dataset.map(lambda img, label: (
+            tf.image.resize(img, size=size, method=method), label))
+        return dataset
 
 
 

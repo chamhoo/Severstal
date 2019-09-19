@@ -38,7 +38,7 @@ class Layers(object):
             assert False, 'initial name ISNOT exist'
 
     def bias_variable(self, value, shape, name='bias'):
-        return tf.Variable(tf.constant(value=value, shape=shape), name=name)
+        return tf.Variable(tf.constant(value=value, shape=shape, dtype='float32'), name=name)
 
     def conv2d(self, x, w, b, padding='SAME', name='conv2d', rate=0.25):
         with tf.name_scope(name):

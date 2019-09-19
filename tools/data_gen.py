@@ -4,6 +4,7 @@ auther: leechh
 import os
 import re
 import cv2
+import copy
 import numpy as np
 import tensorflow as tf
 from time import time
@@ -30,9 +31,14 @@ class DataGen(object):
         :return: generator
         """
         col = col
+        numlen = 0
         totoaltime = time()
 
-        csv_gen, numlen = {'img': None, 'label': []}, 0
+        csv_gen_init = {'img': None, 'label': [],
+                        'height': height, 'width': width,
+                        'channels': 3, 'n_class': 4}
+
+        csv_gen = copy.deepcopy(csv_gen_init)
         with open(path) as file:
             for line in file:
                 line = re.split(sep, line.strip())
@@ -43,18 +49,22 @@ class DataGen(object):
                 else:
                     csv_gen['label'].append(rle)
                     if ClassId == '1':
-                        csv_gen['img'] = cv2.imread(os.path.join(train_path, img)).astype('uint8').tostring()
+                        csv_gen['img'] = cv2.imread(os.path.join(train_path, img)).astype('uint8').tobytes()
                     if ClassId == '4':
-                        csv_gen['label'] = self.__mklabel(csv_gen['label'], height, width).astype('bool').tostring()
+                        csv_gen['label'] = self.__mklabel(csv_gen['label'], height, width).astype('uint8').tobytes()
                         yield csv_gen
-                        csv_gen = {'img': None, 'label': []}
+                        csv_gen = copy.deepcopy(csv_gen_init)
+
         print(time() - totoaltime)
 
-    def read_test(self, test_path):
+    def read_test(self, test_path, height, width,):
         # test generator
         for path in os.listdir(test_path):
             if self.__isimg(path):
-                yield {'img': cv2.imread(os.path.join(test_path, path)).astype('uint8').tostring()}
+                yield {'img': cv2.imread(os.path.join(test_path, path)).astype('uint8').tobytes(),
+                       'height': height,
+                       'width': width,
+                       'channels': 3}
 
     def count(self, path):
         return reduce(lambda x, y: x+y, [self.__isimg(i) for i in os.listdir(path)])

@@ -5,7 +5,7 @@ from tools.model_component import Layers, ModelComponent
 
 class Model(Layers, ModelComponent):
     def unet(self, x, height, width, num_layers, feature_growth_rate, n_class, channels, padding, dropout_rate):
-        node = x
+        node = x / 255
         down_node = {}
         self.model_name = 'U-Net'
         size_h, size_w = height, width
@@ -23,19 +23,19 @@ class Model(Layers, ModelComponent):
                     w1 = self.weight_variable(
                         shape=[3, 3, channels, features],
                         type_name='truncated_normal',
-                        weight_param={'stddev': stddev},
+                        weight_param={'stddev': stddev, 'mean': 0.},
                         name='w1')
                 else:
                     w1 = self.weight_variable(
                         shape=[3, 3, features // 2, features],
                         type_name='truncated_normal',
-                        weight_param={'stddev': stddev},
+                        weight_param={'stddev': stddev, 'mean': 0.},
                         name='w1')
 
                 w2 = self.weight_variable(
                     shape=[3, 3, features, features],
                     type_name='truncated_normal',
-                    weight_param={'stddev': stddev},
+                    weight_param={'stddev': stddev, 'mean': 0.},
                     name='w2')
 
                 b1 = self.bias_variable(value=0, shape=[features], name='b1')
@@ -69,19 +69,19 @@ class Model(Layers, ModelComponent):
                 wu = self.weight_variable(
                         shape=[2, 2, features, 2 * features],   # [filter, filter, output, input]
                         type_name='truncated_normal',
-                        weight_param={'stddev': stddev},
+                        weight_param={'stddev': stddev, 'mean': 0.},
                         name='wu')
 
                 w1 = self.weight_variable(
                         shape=[3, 3, 2 * features, features],     # [filter, filter, input, output]
                         type_name='truncated_normal',
-                        weight_param={'stddev': stddev},
+                        weight_param={'stddev': stddev, 'mean': 0.},
                         name='w1')
 
                 w2 = self.weight_variable(
                         shape=[3, 3, features, features],
                         type_name='truncated_normal',
-                        weight_param={'stddev': stddev},
+                        weight_param={'stddev': stddev, 'mean': 0.},
                         name='w2')
 
                 bu = self.bias_variable(value=0, shape=[features], name='bu')
@@ -111,7 +111,7 @@ class Model(Layers, ModelComponent):
             w = self.weight_variable(
                 shape=[1, 1, feature_growth_rate, n_class],
                 type_name='truncated_normal',
-                weight_param={'stddev': stddev},
+                weight_param={'stddev': stddev, 'mean': 0.},
                 name='output_w')
 
             b = self.bias_variable(value=0, shape=[n_class], name='output_b')
@@ -119,4 +119,4 @@ class Model(Layers, ModelComponent):
             # output
             node = self.conv2d(node, w, b, padding=padding, name='output_conv', rate=0)
             node = tf.nn.relu(node)
-        return node, size_h, size_w
+        return node, int(size_h), int(size_w)
