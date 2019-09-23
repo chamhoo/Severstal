@@ -71,6 +71,7 @@ class Layers(object):
         # (batch, up_height, up_width, up_features + down_features)
         return tf.concat([x_down_slice, x_up], axis=3)
 
+
 class ModelComponent(object):
 
     def optimizier(self, optimizier_name, learning_rate, loss):
@@ -91,13 +92,13 @@ class ModelComponent(object):
         # gd
         elif optimizier_name == 'gd':
             train_opt = tf.train.GradientDescentOptimizer(
-                learning_rate=learning_rate
+                learning_rate=learning_rate,
             ).minimize(loss)
         # momentun
         elif optimizier_name == 'momentun':
             train_opt = tf.train.MomentumOptimizer(
                 learning_rate=learning_rate,
-                momentum=0.95
+                momentum=0.99
             ).minimize(loss)
 
         else:
@@ -109,10 +110,21 @@ class ModelComponent(object):
         # y_*: [batch, height, width, num_class]
         # dice
         if metric_name == 'dice':
-            smooth = 1e-5
+            smooth = 1e-8
+            # y_true = tf.nn.softmax(y_true)
+            # y_pred = tf.nn.softmax(y_pred)
             intersection = tf.reduce_sum(tf.multiply(y_true, y_pred))
-            union = tf.reduce_sum(y_true) + tf.reduce_sum(y_pred)
-            return ((2 * intersection) + smooth) / (union + smooth)
+            y_true_sum = tf.reduce_sum(y_true)
+            y_pred_sum = tf.reduce_sum(y_pred)
+            y_true_count = tf.count_nonzero(y_true)
+            y_pred_count = tf.count_nonzero(y_pred)
+            union = y_true_sum + y_pred_sum
+            return [
+                1 - (((2 * intersection) + smooth) / (union + smooth)),
+                intersection,
+                y_true_sum, y_pred_sum,
+                y_true_count, y_pred_count,
+                y_true, y_pred]
 
         else:
             assert False, 'metric function ISNOT exist'

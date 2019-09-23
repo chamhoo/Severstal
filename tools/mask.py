@@ -58,3 +58,29 @@ def plotmask(iminfo, image, figsize):
         plt.yticks(np.arange(0, height, 50))
     plt.show()
 
+
+def plotgen(iminfo, image, figsize):
+    class2rgb = {1: [1, 2], 2: [0, 2], 3: [0, 1], 4: [2]}
+    # image = np.frombuffer(image, dtype='uint8').reshape([256, 1600, 3])
+    # iminfo = np.frombuffer(iminfo, dtype='uint8').reshape([256, 1600, 4])
+    height, width, _ = image.shape
+    image_mask = image.astype('float')
+
+    for layer in range(4):
+        mask = iminfo[..., layer][..., np.newaxis]
+        rgblayer = class2rgb[layer + 1]
+        masklayer = list({0, 1, 2} - set(rgblayer))
+        image_mask[:, :, rgblayer] *= np.repeat(1 - mask, len(rgblayer), axis=2)
+        img = image_mask[:, :, masklayer]
+        msk = np.repeat(mask, len(masklayer), axis=2)
+        image_mask[:, :, masklayer] = 255 * msk - 2 * img * msk + img
+
+    plt.figure(figsize=figsize)
+    for i, im in enumerate([image, image_mask]):
+        plt.subplot(2, 1, i + 1)
+        plt.imshow(im.astype('uint8'))
+        plt.grid()
+        plt.xticks(np.arange(0, width, 50))
+        plt.yticks(np.arange(0, height, 50))
+    plt.show()
+

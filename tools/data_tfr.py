@@ -14,7 +14,6 @@ class TFR(DataGen):
         self.__seed = 18473
         self.random_gen = self._pseudo_random(214013, 2531011)
 
-
     def seed(self, seed):
         self.__seed = seed
 
@@ -71,11 +70,10 @@ class TFR(DataGen):
             num_shards, step = int(np.ceil(count/shards)), int(shards)
 
         # update dir
-        dir_path = os.path.join('..', 'tmp', 'TFRecords', f'{tfrpath}')
-        self.mkdir(dir_path)
+        self.mkdir(tfrpath)
 
         for num in range(num_shards):
-            tfr_path = os.path.join(dir_path, '%03d-of-%03d.tfrecord' % (num, num_shards))
+            tfr_path = os.path.join(tfrpath, '%03d-of-%03d.tfrecord' % (num, num_shards))
             writer = tf.io.TFRecordWriter(tfr_path, options=options)
             # write TFRecords file.
             try:
@@ -121,7 +119,7 @@ class TFR(DataGen):
         dataset = tf.data.TFRecordDataset(files, compression_type=compression)
         dataset = dataset.map(lambda raw: tf.io.parse_single_example(raw, features=features))
         dataset = dataset.map(decode_raw)
-        dataset = dataset.shuffle(shuffle_buffer, seed=next(self.random_gen))
+        dataset = dataset.shuffle(shuffle_buffer)  #, seed=next(self.random_gen))
         return dataset
 
     def readtrain(self, rt_params, train_path, num_valid, epoch, batch_size, reshape=None, reshape_method=None):
@@ -131,9 +129,9 @@ class TFR(DataGen):
         self.reshape = reshape
         self.reshape_method  = reshape_method
 
-        # read tfrecord
+        # read tfrecord & resize
         dataset = self.readtfrecorde(**rt_params)
-        if self.reshape is None:
+        if self.reshape is not None:
             dataset = self.resize(dataset, reshape, reshape_method)
 
         # num_valid & count
@@ -154,12 +152,14 @@ class TFR(DataGen):
         self.valid_iterator = valid_dataset.make_initializable_iterator()
         self.valid_img, self.valid_label = self.valid_iterator.get_next()
 
-
-    def readtest(self, rt_params, test_path):
-        # count
+    def readtest(self, rt_params, test_path, batch_size, reshape=None, reshape_method=None):
+        # count & read records
         self.test_count = self.count(test_path)
+        test_dataset = self.readtfrecorde(**rt_params)
 
-        self.test_dataset, self.test_count = self.readtfrecorde(**rt_params)
+        # test dataset
+        self.test_iterator = test_dataset.make_initializable_iterator()
+        self.test_img = self.train_iterator.get_next()
 
     def resize(self, dataset, size, method):
         """

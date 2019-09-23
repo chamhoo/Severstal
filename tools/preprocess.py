@@ -3,7 +3,7 @@ auther: LeeCHH
 """
 import numpy as np
 import tensorflow as tf
-from tools.data_gen import TFR
+from tools.data_tfr import TFR
 
 
 class Preprocess(TFR):

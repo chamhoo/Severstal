@@ -21,10 +21,10 @@ class DataGen(object):
     def __isimg(self, path):
         return os.path.splitext(path)[1] in ['.png', '.jpg']
 
-    def seg_train_gen(self, path, train_path, height, width, col=False, sep=','):
+    def seg_train_gen(self, csv_path, train_path, height, width, col=False, sep=','):
         """
         read csv file to generator
-        :param path: str, Path of the csv file.
+        :param csv_path: str, Path of the csv file.
         :param col: False(Bool) or list, if False, This mean that the col information is
          contained in the csv file. if not contained, You need to set col_name manually.
         :param sep: str, default ',' Delimiter to use.
@@ -39,7 +39,7 @@ class DataGen(object):
                         'channels': 3, 'n_class': 4}
 
         csv_gen = copy.deepcopy(csv_gen_init)
-        with open(path) as file:
+        with open(csv_path) as file:
             for line in file:
                 line = re.split(sep, line.strip())
                 img, ClassId, rle = line

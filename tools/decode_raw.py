@@ -6,8 +6,8 @@ def decode_img_seg(raw):
     label = tf.decode_raw(raw['label'], tf.uint8)
 
     # convert image dtype
-    img = tf.cast(img, dtype=tf.int64)
-    label = tf.cast(label, dtype=tf.int64)
+    img = tf.cast(img, dtype=tf.float32)
+    label = tf.cast(label, dtype=tf.float32)
 
     # set_shape
     img = tf.reshape(img, [raw['height'], raw['width'], raw['channels']])

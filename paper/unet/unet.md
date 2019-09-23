@@ -4,7 +4,7 @@
 ***
 **Abstract.** There is large consent that successful training of deep networks requires many thousand annotated training samples. In this paper, we present a network and training strategy that relies on the strong use of data augmentation to use the available annotated samples more efficiently. The architecture consists of a contracting path to capture context and a symmetric expanding path that enables precise localization. We show that such a network can be trained end-to-end from very few images and outperforms the prior best method (a sliding-window convolutional network) on the ISBI challenge for segmentation of neuronal structures in electron microscopic stacks. Using the same network trained on transmitted light microscopy images (phase contrast and DIC) we won the ISBI cell tracking challenge 2015 in these categories by a large margin. Moreover, the network is fast. Segmentation of a 512x512 image takes less than a second on a recent GPU. The full implementation (based on Caffe) and the trained networks are available at http://lmb.informatik.uni-freiburg.de/people/ronneber/u-net.
 
-**摘要.**我们一般认为一次成功的深度学习训练需要数千个带注释的训练样本。在本文中，我们提出了一个网络和训练策略，它依赖于强大的数据扩充来更有效的利用注释样本。！！！。我们展示的这个网络可以使用非常少的图像进行end-to-end训练，并且优于ISBI挑战赛（使用电子显微镜堆叠中的神经元结构的分割）的最佳方法（滑动窗口卷积网络）。使用相同的网络，我们以很大的优势赢得了2015年ISBI细胞追踪挑战赛的冠军。并且网络速度很快，最近在GPU上，512x512图像的分割不到一秒。完整的搭建以及训练过的网络可以在 http://lmb.informatik.uni-freiburg.de/people/ronneber/u-net 获得。
+**摘要.**我们一般认为一次成功的深度学习训练需要数千个带注释的训练样本。在本文中，我们提出了一个网络和训练策略，它依赖于强大的数据扩充来更有效的利用注释样本。该体系包含了用于捕捉上下文的收缩路径和一个用于实现精确定位的扩张路径。我们展示的这个网络可以使用非常少的图像进行end-to-end训练，并且优于ISBI挑战赛（使用电子显微镜堆叠中的神经元结构的分割）的最佳方法（滑动窗口卷积网络）。使用相同的网络，我们以很大的优势赢得了2015年ISBI细胞追踪挑战赛的冠军。并且网络速度很快，最近在GPU上，512x512图像的分割不到一秒。完整的搭建以及训练过的网络可以在 http://lmb.informatik.uni-freiburg.de/people/ronneber/u-net 获得。
 
 ## 1. Introduction
 
@@ -14,13 +14,13 @@ In the last two years, deep convolutional networks have outperformed the state o
 
 The typical use of convolutional networks is on classification tasks, where the output to an image is a single class label. However, in many visual tasks,especially in biomedical image processing, the desired output should include localization, i.e., a class label is supposed to be assigned to each pixel. Moreover, thousands of training images are usually beyond reach in biomedical tasks.Hence, Ciresan et al. [1] trained a network in a sliding-window setup to predict the class label of each pixel by providing a local region (patch) around that pixel as input. First, this network can localize. Secondly, the training data in terms of patches is much larger than the number of training images. The resulting network won the EM segmentation challenge at ISBI 2012 by a large margin.
 
-卷积网络的典型用途是分类任务，一个图像的输出是一个单个类别的标签。然而，在许多视觉任务中，尤其在医学图像处理中，我们期望最终的输出应该包含位置信息，即，一个分类标签应该被分配给每个像素。此外，医学任务往往无法获取数以千计的训练数据。Hence, Ciresan et al. [1]通过提供该像素周围的局部区域（补丁）作为输入，使用滑动窗口训练网络以预测每个像素的类别标签。首先，这个网络可以定位。其次，补丁的训练数据远远的多于训练图像。由此产生的网络以大优势赢得了2012年的ISBI的分段挑战。
+卷积网络的典型用途是分类任务，一个图像的输出是一个单个类别的标签。然而，在许多视觉任务中，尤其在医学图像处理中，我们期望最终的输出应该包含位置信息，即，一个分类标签应该被分配给每个像素。此外，医学任务往往无法获取数以千计的训练数据。Hence, Ciresan et al. [1]通过提供该像素周围的局部区域（补丁）作为输入，使用滑动窗口训练网络以预测每个像素的类别标签。首先，这个网络可以定位。并且，补丁的训练数据远远的多于训练图像。由此产生的网络以大优势赢得了2012年的ISBI的分段挑战。
 
 ![](fig1.png)
 
-<font size=1> Fig. 1. U-net architecture (example for 32x32 pixels in the lowest resolution). Each blue box corresponds to a multi-channel feature map. The number of channels is denoted on top of the box. The x-y-size is provided at the lower left edge of the box. White boxes represent copied feature maps. The arrows denote the different operations. <\font>
+<font size=2> Fig. 1. U-net architecture (example for 32x32 pixels in the lowest resolution). Each blue box corresponds to a multi-channel feature map. The number of channels is denoted on top of the box. The x-y-size is provided at the lower left edge of the box. White boxes represent copied feature maps. The arrows denote the different operations. </font>
 
-<font size=1>  图片1U-net架构（最低分辨率32x32的示例）每个蓝色框对应多通道特征图。在箱型顶部表示通道的数量。在箱型的左下边缘提供x-y尺寸。白色框表示复制的特征图。箭头表示不同的操作。 <\font>
+<font size=2>  图片1U-net架构（最低分辨率32x32的示例）每个蓝色框对应多通道特征图。在箱型顶部表示通道的数量。在箱型的左下边缘提供x-y尺寸。白色框表示复制的特征图。箭头表示不同的操作。 </font>
 
 Obviously, the strategy in Ciresan et al. [1] has two drawbacks. First, it is quite slow because the network must be run separately for each patch, and there is a lot of redundancy due to overlapping patches. Secondly, there is a trade-off between localization accuracy and the use of context. Larger patches require more max-pooling layers that reduce the localization accuracy, while small patches allow the network to see only little context. More recent approaches[11,4] proposed a classifier output that takes into account the features from multiple layers. Good localization and the use of context are possible at the same time.
 
@@ -28,7 +28,7 @@ Obviously, the strategy in Ciresan et al. [1] has two drawbacks. First, it is qu
 
 In this paper, we build upon a more elegant architecture, the so-called “fully convolutional network” [9]. We modify and extend this architecture such that it works with very few training images and yields more precise segmentations; see Figure 1. The main idea in [9] is to supplement a usual contracting network by successive layers, where pooling operators are replaced by upsampling operators. Hence, these layers increase the resolution of the output. In order to localize, high resolution features from the contracting path are combined with the upsampled output. A successive convolution layer can then learn to assemble a more precise output based on this information.
 
-在这篇论文中，我们建立了一个更加优雅的架构，即所谓的“完全卷积网络”，我们对这个架构进行了修改和拓展，使得它只需要很少的训练图像就可以进行更加精确的分割；参见图片1.主要的思想是将 successive 层添加进通常构建的网络，其中的池化运算被上采样运算代替。因此，这些层增加了输出的分辨率。为了进行定位，构建路径上的高分辨率特征与上采样c输出相结合。然后，连续卷积层基于此可以学习更精准的输出。
+在这篇论文中，我们建立了一个更加优雅的架构，即所谓的“完全卷积网络”，我们对这个架构进行了修改和拓展，使得它只需要很少的训练图像就可以进行更加精确的分割；参见图片1.主要的思想是将 successive 层添加进通常构建的网络，其中的池化运算被上采样运算代替。因此，这些层增加了输出的分辨率。为了进行定位，收缩路径上的高分辨率特征与上采样输出相结合。然后，连续卷积层基于此可以学习更精准的输出。
 
 One important modification in our architecture is that in the upsampling part we have also a large number of feature channels, which allow the network to propagate context information to higher resolution layers. As a consequence, the expansive path is more or less symmetric to the contracting path, and yields a u-shaped architecture. The network does not have any fully connected layer and only uses the valid part of each convolution, i.e., the segmentation map only contains the pixels, for which the full context is available in the input image. This strategy allows the seamless segmentation of arbitrarily large images by an overlap-tile strategy (see Figure 2). To predict the pixels in the border region of the image, the missing context is extrapolated by mirroring the input image. This tiling strategy is important to apply the network to large images, since otherwise the resolution would be limited by the GPU memory.
 
@@ -40,7 +40,7 @@ As for our tasks there is very little training data available, we use excessive 
 
 Another challenge in many cell segmentation tasks is the separation of touching objects of the same class; see Figure 3. To this end, we propose the use of a weighted loss, where the separating background labels between touching cells obtain a large weight in the loss function.
 
-细胞分割任务中的另一个挑战是分离同一类的相邻的细胞；为此，我们建议使用加权损失，其中分离相邻细胞之间的背景标签在损失函数中赋予较大的权重。
+细胞分割任务中的另一个挑战是分离同一类的相邻的细胞；参见图3。为此，我们建议使用加权损失，其中分离相邻细胞之间的背景标签在损失函数中赋予较大的权重。
 
 The resulting network is applicable to various biomedical segmentation problems. In this paper, we show results on the segmentation of neuronal structures in EM stacks (an ongoing competition started at ISBI 2012), where we outperformed the network of Ciresan et al. [1]. Furthermore, we show results for cell segmentation in light microscopy images from the ISBI cell tracking challenge 2015. Here we won with a large margin on the two most challenging 2D transmitted light datasets.
 
@@ -62,9 +62,15 @@ The input images and their corresponding segmentation maps are used to train the
 
 输入图像以及相应的分割图的网络训练使用caffe 的随机梯度下降实现。对于未填充的卷积，输出图像小于输入的恒定边界宽度。为了最大限度的减少开销以及利用 GPU 显存，我们更倾向于使用大的输入切片而不是大的批量，所以我们将批量减小到单个图像。因此，我们使用一个高动量（0.99）使得当前优化步骤中的更新由大量先前看到的训练样本决定。
 
-The energy function is computed by a pixel-wise soft-max over the final feature map combined with the cross entropy loss function. The soft-max is defined as $p_{k}(x)=exp(a_{k}(x))/(\Sigma{K}{k^{'}=1}exp(a_{k^{'}}(x))) $ where $a_{k}(x)$ denotes the activation in feature channel $k$ at the pixel position $x\in\Omega$ with $\Omega\subset\mathbb{z}^{2}$. $K$ is the number of classes and $p_{k}(x)$ is the approximated maximum-function. I.e. $p_{k}(x) \approx 1$ for the $k$ that has the maximum activation $a_{k}(x)$ and $p_{k}(x) \approx 0$ for all other $k$. The cross entropy then penalizes at each position the deviation of $$ from 1 using $$ E=\Sigma \Omega(x)log(p_{l(x)}(x))$$ where $l: \Omega \to {1, . . . , K}$ is the true label of each pixel and $w : \Omega \to \mathbb{R}$ is a weight map that we introduced to give some pixels more importance in the training.
+The energy function is computed by a pixel-wise soft-max over the final feature map combined with the cross entropy loss function. The soft-max is defined as $p_{k}(x)=exp(a_{k}(x))/(\sum^{K}_{k^{'}} exp(a_{k^{'}}(x)))$ where $a_{k}(x)$ denotes the activation in feature channel $k$ at the pixel position $x\in\Omega$ with $\Omega\subset\mathbb{Z}^{2}$. $K$ is the number of classes and $p_{k}(x)$ is the approximated maximum-function. I.e. $p_{k}(x) \approx 1$ for the $k$ that has the maximum activation $a_{k}(x)$ and $p_{k}(x) \approx 0$ for all other $k$. The cross entropy then penalizes at each position the deviation of $p_{l_{(x)}}(x)$ from 1 using
 
-能量函数通过最终特征图的逐像素的soft-max与交叉熵损失函数组合计算。soft-max定义为$p_{k}(x)=exp(a_{k}(x))/(\Sigma{K}{k^{'}=1}exp(a_{k^{'}}(x))) $ 其中 $a_{k}(x)$ denotes the activation in feature channel $k$ at the pixel position $x\in\Omega$ with $\Omega\subset\mathbb{z}^{2}$. $K$ is the number of classes and $p_{k}(x)$ is the approximated maximum-function. I.e. $p_{k}(x) \approx 1$ for the $k$ that has the maximum activation $a_{k}(x)$ and $p_{k}(x) \approx 0$ for all other $k$. The cross entropy then penalizes at each position the deviation of $$ from 1 using $$ E=\Sigma \Omega(x)log(p_{l(x)}(x))$$ 其中 $l: \Omega \to {1, . . . , K}$ 是每个像素的真实标签 $w : \Omega \to \mathbb{R}$ 是我们引入的权重图，用于在训练中使得一些像素更重要
+能量函数由最后一个特征图进行逐像素的soft-max之后计算交叉熵损失函数（cross entropy ）得出。soft-max定义为 $p_{k}(x)=exp(a_{k}(x))/(\sum^{K}_{k^{'}} exp(a_{k^{'}}(x)))$ 其中 $a_{k}(x)$ 表示像素位置$x\in\Omega$（$\Omega\subset\mathbb{Z}^{2}$）在特征通道$k$处的激活值。  $K$ 是分类的数量以及 $p_{k}(x)$ 是近似最大函数. 换句话说.对于特征通道$k$激活 $a_{k}(x)$ 使得 $p_{k}(x) \approx 1$， 对于其他特征通道 $p_{k}(x) \approx 0$.交叉熵会惩罚每个位置的偏差，使用：
+
+ $$E=\sum_{X\in\Omega}w(X)\log(p_{l(X)}(X))$$
+
+  where $l: \Omega \to \{1, . . . , K\}$ is the true label of each pixel and $w : \Omega \to \mathbb{R}$ is a weight map that we introduced to give some pixels more importance in the training.
+
+  其中 $l: \Omega \to \{1, . . . , K\}$ 是每一个像素的真实值，以及 $w : \Omega \to \mathbb{R}$ 是我们引入的权重图，以使某些像素在训练中更加重要。
 
 We pre-compute the weight map for each ground truth segmentation to compensate the different frequency of pixels from a certain class in the training data set, and to force the network to learn the small separation borders that we introduce between touching cells (See Figure 3c and d).
 
@@ -74,7 +80,7 @@ The separation border is computed using morphological operations. The weight map
 
 使用形态学来计算分离边界。权重图被计算为：
 
-$$w(x) = w_{c}(x) + w_{0}(x).exp(-/frac{(d_{1}(x) + d_{2}(x))^{2}}{2\sigma^{2}})$$
+$$w(x) = w_{c}(x) + w_{0}(x).exp(-\frac{(d_{1}(x) + d_{2}(x))^{2}}{2\sigma^{2}})$$
 
 where $w_{c} : \Omega \to \mathbb{R}$ is the weight map to balance the class frequencies, $d_{1} : \Omega \to \mathbb{R}$ denotes the distance to the border of the nearest cell and $d_{2} : \Omega \to \mathbb{R}$ the distance to the border of the second nearest cell. In our experiments we set $w_{0} = 10$ and $\sigma \approx 5$ pixels.
 
