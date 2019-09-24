@@ -59,7 +59,7 @@ class Network(Model, Preprocess):
         self.opt = self.optimizier(
             optimizier_name=optimizer,
             learning_rate=rate,
-            loss=self.loss[0])
+            loss=self.loss)
 
         # valid
         valid_y_pred, y_h, y_w = model(x=self.valid_img, **model_params)
@@ -146,16 +146,16 @@ class Network(Model, Preprocess):
                         break
 
                 # calculate loss and print
-                loss_epoch = np.mean(loss_epoch)
-                metric_epoch = np.mean(metric_epoch)
+                loss = np.mean(loss_epoch)
+                metric = np.mean(metric_epoch)
 
-                self.modelinfo['train_loss'].append(loss_epoch)
-                self.modelinfo['valid_metrics'].append(metric_epoch)
+                self.modelinfo['train_loss'].append(loss)
+                self.modelinfo['valid_metrics'].append(metric)
 
-                if verbose:
+                if verbose == 2:
                     print(f'After {epoch_num} epoch, '
-                          f'train {self.loss_name} is {np.round(loss_epoch, 4)}, '
-                          f'valid {self.metric_name} is {np.round(metric_epoch, 4)}')
+                          f'train {self.loss_name} is {np.round(loss, 4)}, '
+                          f'valid {self.metric_name} is {np.round(metric, 4)}')
 
                 # check point & early stopping
                 self.__checkpoint(saver=saver,

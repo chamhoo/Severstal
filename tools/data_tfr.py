@@ -131,8 +131,7 @@ class TFR(DataGen):
 
         # read tfrecord & resize
         dataset = self.readtfrecorde(**rt_params)
-        if self.reshape is not None:
-            dataset = self.resize(dataset, reshape, reshape_method)
+        dataset = self.resize(dataset, reshape, reshape_method)
 
         # num_valid & count
         if num_valid <= 1:
