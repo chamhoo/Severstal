@@ -16,12 +16,14 @@ class DataGen(object):
 
     def __mklabel(self, rle, height, width):
         label_lst = [rle2mask(i, height, width) for i in rle]
-        return np.concatenate(label_lst, axis=2)
+        label_arr = np.concatenate(label_lst, axis=2)
+        background = (1 - np.sum(label_arr, axis=2, dtype='bool'))[..., np.newaxis]
+        return np.concatenate([label_arr, background], axis=2)
 
     def __isimg(self, path):
         return os.path.splitext(path)[1] in ['.png', '.jpg']
 
-    def seg_train_gen(self, csv_path, train_path, height, width, col=False, sep=','):
+    def seg_train_gen(self, csv_path, train_path, height, width, col=False, sep=',', n_class=5):
         """
         read csv file to generator
         :param csv_path: str, Path of the csv file.
@@ -36,7 +38,7 @@ class DataGen(object):
 
         csv_gen_init = {'img': None, 'label': [],
                         'height': height, 'width': width,
-                        'channels': 3, 'n_class': 4}
+                        'channels': 3, 'n_class': n_class}
 
         csv_gen = copy.deepcopy(csv_gen_init)
         with open(csv_path) as file:

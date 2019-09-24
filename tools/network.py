@@ -77,7 +77,7 @@ class Network(Model, Preprocess):
     def empty_modelinfo(self):
         self.modelinfo = {
             'start_epoch': 1,
-            'ckpt': None,
+            'ckpt': '',
             'train_loss': [2**32],
             'valid_metrics': [2**32]
         }
@@ -146,16 +146,16 @@ class Network(Model, Preprocess):
                         break
 
                 # calculate loss and print
-                loss_epoch = sum(loss_epoch)
-                metric_epoch = sum(metric_epoch)
+                loss_epoch = np.mean(loss_epoch)
+                metric_epoch = np.mean(metric_epoch)
 
                 self.modelinfo['train_loss'].append(loss_epoch)
                 self.modelinfo['valid_metrics'].append(metric_epoch)
 
                 if verbose:
                     print(f'After {epoch_num} epoch, '
-                          f'train {self.loss_name} is {round(loss_epoch, 4)}, '
-                          f'valid {self.metric_name} is {round(metric_epoch, 4)}')
+                          f'train {self.loss_name} is {np.round(loss_epoch, 4)}, '
+                          f'valid {self.metric_name} is {np.round(metric_epoch, 4)}')
 
                 # check point & early stopping
                 self.__checkpoint(saver=saver,

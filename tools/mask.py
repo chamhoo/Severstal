@@ -6,12 +6,11 @@ import matplotlib.pyplot as plt
 
 
 def rle2mask(rle, height, width):
-    mask = np.zeros(width*height)
+    mask = np.zeros(width*height, dtype='bool')
     rle = [int(i) for i in rle.strip().split()]
     for start, lengeth in zip(rle[0::2], rle[1::2]):
-        mask[start-1: start+lengeth-1] = 1
+        mask[start-1: start+lengeth-1] = True
     return mask.reshape((height, width, 1), order='F')
-
 
 def mask2rle(mask):
     rle = ''

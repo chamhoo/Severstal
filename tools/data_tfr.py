@@ -119,7 +119,7 @@ class TFR(DataGen):
         dataset = tf.data.TFRecordDataset(files, compression_type=compression)
         dataset = dataset.map(lambda raw: tf.io.parse_single_example(raw, features=features))
         dataset = dataset.map(decode_raw)
-        dataset = dataset.shuffle(shuffle_buffer)  #, seed=next(self.random_gen))
+        dataset = dataset.shuffle(shuffle_buffer, seed=next(self.random_gen))
         return dataset
 
     def readtrain(self, rt_params, train_path, num_valid, epoch, batch_size, reshape=None, reshape_method=None):

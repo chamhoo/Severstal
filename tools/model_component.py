@@ -111,20 +111,10 @@ class ModelComponent(object):
         # dice
         if metric_name == 'dice':
             smooth = 1e-8
-            # y_true = tf.nn.softmax(y_true)
-            # y_pred = tf.nn.softmax(y_pred)
+            y_pred = tf.nn.softmax(y_pred)
             intersection = tf.reduce_sum(tf.multiply(y_true, y_pred))
-            y_true_sum = tf.reduce_sum(y_true)
-            y_pred_sum = tf.reduce_sum(y_pred)
-            y_true_count = tf.count_nonzero(y_true)
-            y_pred_count = tf.count_nonzero(y_pred)
-            union = y_true_sum + y_pred_sum
-            return [
-                1 - (((2 * intersection) + smooth) / (union + smooth)),
-                intersection,
-                y_true_sum, y_pred_sum,
-                y_true_count, y_pred_count,
-                y_true, y_pred]
+            union = tf.reduce_sum(y_true) + tf.reduce_sum(y_pred)
+            return 1 - (((2 * intersection) + smooth) / (union + smooth))
 
         else:
             assert False, 'metric function ISNOT exist'

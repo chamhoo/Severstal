@@ -18,6 +18,7 @@ def decode_img_seg(raw):
 def decode_img_seg_test(raw):
     img = tf.decode_raw(raw['img'], tf.uint8)
     # convert image dtype
-    img = tf.image.convert_image_dtype(img, dtype=tf.float32)
+    img = tf.cast(img, dtype=tf.float32)
+    img = tf.reshape(img, [raw['height'], raw['width'], raw['channels']])
     return img
 
