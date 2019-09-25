@@ -122,7 +122,7 @@ class TFR(DataGen):
         dataset = dataset.shuffle(shuffle_buffer, seed=next(self.random_gen))
         return dataset
 
-    def readtrain(self, rt_params, train_path, num_valid, epoch, batch_size, reshape=None, reshape_method=None):
+    def readtrain(self, rt_params, train_path, valid_percentage, epoch, batch_size, reshape=None, reshape_method=None):
         # parameter
         self.epoch = epoch
         self.batch_size = batch_size
@@ -131,25 +131,21 @@ class TFR(DataGen):
 
         # read tfrecord & resize
         dataset = self.readtfrecorde(**rt_params)
-        dataset = self.resize(dataset, reshape, reshape_method)
 
         # num_valid & count
-        if num_valid <= 1:
-            num_valid = int(self.train_count * num_valid)
-
-        self.train_count = self.count(train_path) - num_valid
-        self.valid_count = num_valid
+        total_count = self.count(train_path)
+        total_batch_pre_epoch = np.ceil(total_count / batch_size)
+        if valid_percentage <= 1:
+            self.num_valid_batch = int(np.ceil(valid_percentage / total_batch_pre_epoch))
+            self.num_train_batch = int(total_batch_pre_epoch - self.num_valid_batch)
+        else:
+            assert False, 'valid_percentage <= 1'
 
         # train & valid dataset
-        train_dataset = dataset.skip(num_valid)
-        train_dataset = train_dataset.batch(self.batch_size).repeat(2 * self.epoch)
-        self.train_iterator = train_dataset.make_initializable_iterator()
-        self.train_img, self.train_label = self.train_iterator.get_next()
-
-        valid_dataset = dataset.take(num_valid)
-        valid_dataset = valid_dataset.batch(self.batch_size).repeat(self.epoch)
-        self.valid_iterator = valid_dataset.make_initializable_iterator()
-        self.valid_img, self.valid_label = self.valid_iterator.get_next()
+        dataset = dataset.batch(self.batch_size).repeat(2 * self.epoch)
+        self.iterator = dataset.make_initializable_iterator()
+        self.img_origin, self.label = self.iterator.get_next()
+        self.img = tf.image.resize(self.img_origin, size=reshape, method=reshape_method)
 
     def readtest(self, rt_params, test_path, batch_size, reshape=None, reshape_method=None):
         # count & read records
@@ -158,7 +154,7 @@ class TFR(DataGen):
 
         # test dataset
         self.test_iterator = test_dataset.make_initializable_iterator()
-        self.test_img = self.train_iterator.get_next()
+        self.test_img = self.test_iterator.get_next()
 
     def resize(self, dataset, size, method):
         """

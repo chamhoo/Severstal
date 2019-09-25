@@ -18,20 +18,6 @@ class Network(Model, Preprocess):
         else:
             assert False, 'model ISNOT exist'
 
-    def test(self):
-        with tf.Session() as sess:
-            # init
-            sess.run((tf.global_variables_initializer(), tf.local_variables_initializer()))
-            sess.run((self.train_iterator.initializer, self.valid_iterator.initializer))
-            for _ in range(5):
-                try:
-                    img, label = sess.run((
-                        self.train_img,
-                        tf.image.resize(self.train_label, size=[128, 800], method=3)))
-                    plotgen(label[0], img[0], [15, 7])
-                except tf.errors.OutOfRangeError:
-                    break
-
     def model(self, model_name, model_params,
               loss, metric, optimizer, rate):
 
@@ -44,35 +30,27 @@ class Network(Model, Preprocess):
         model = self.select_model(model_name)
 
         # train
-        train_y_pred, y_h, y_w = model(x=self.train_img, **model_params)
+        y_pred, y_h, y_w = model(x=self.img, **model_params)
 
-        train_y_true = tf.image.resize(
-            self.train_label,
+        y_true = tf.image.resize(
+            self.label,
             size=[y_h, y_w],
             method=self.reshape_method)
 
         self.loss = self.metric_func(
             metric_name=self.loss_name,
-            y_true=train_y_true,
-            y_pred=train_y_pred)
+            y_true=y_true,
+            y_pred=y_pred)
+
+        self.metric = self.metric_func(
+            metric_name=self.metric_name,
+            y_true=y_true,
+            y_pred=y_pred)
 
         self.opt = self.optimizier(
             optimizier_name=optimizer,
             learning_rate=rate,
             loss=self.loss)
-
-        # valid
-        valid_y_pred, y_h, y_w = model(x=self.valid_img, **model_params)
-
-        valid_y_true = tf.image.resize(
-            self.valid_label,
-            size=[y_h, y_w],
-            method=self.reshape_method)
-
-        self.metric = self.metric_func(
-            metric_name=self.metric_name,
-            y_true=valid_y_true,
-            y_pred=valid_y_pred)
 
     def empty_modelinfo(self):
         self.modelinfo = {
@@ -111,7 +89,7 @@ class Network(Model, Preprocess):
             error_rise_count = 0
             self.mkdir(ckpt_dir)
             sess.run((tf.global_variables_initializer(), tf.local_variables_initializer()))
-            sess.run((self.train_iterator.initializer, self.valid_iterator.initializer))
+            sess.run(self.iterator.initializer)
 
             # train & print
             start_epoch = self.modelinfo['start_epoch']
@@ -121,27 +99,31 @@ class Network(Model, Preprocess):
                 loss_epoch = []
                 metric_epoch = []
 
-                num_train_chunk = int(np.ceil(self.train_count / self.batch_size))
-                num_valid_chunk = int(np.ceil(self.valid_count / self.batch_size))
-
                 # run training optimizer
-                for _ in range(num_train_chunk):
+                for _ in range(self.num_train_batch):
                     try:
                         sess.run(self.opt)
                     except tf.errors.OutOfRangeError:
                         break
 
+                # get valid loss
+                for _ in range(self.num_valid_batch):
+                    try:
+                        metric_epoch.append(sess.run(self.metric))
+                    except tf.errors.OutOfRangeError:
+                        break
+
                 # get training loss
-                for _ in range(num_train_chunk):
+                for _ in range(self.num_train_batch):
                     try:
                         loss_epoch.append(sess.run(self.loss))
                     except tf.errors.OutOfRangeError:
                         break
 
-                # get valid loss
-                for _ in range(num_valid_chunk):
+                # get training loss
+                for _ in range(self.num_valid_batch):
                     try:
-                        metric_epoch.append(sess.run(self.metric))
+                        sess.run(self.img_origin)
                     except tf.errors.OutOfRangeError:
                         break
 

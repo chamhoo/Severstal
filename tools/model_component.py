@@ -106,15 +106,21 @@ class ModelComponent(object):
 
         return train_opt
 
+    def dice(self, y_true, y_pred):
+        smooth = 1e-8
+        y_pred = tf.nn.softmax(y_pred)
+        intersection = tf.reduce_sum(tf.multiply(y_true, y_pred))
+        union = tf.reduce_sum(y_true) + tf.reduce_sum(y_pred)
+        return ((2 * intersection) + smooth) / (union + smooth)
+
     def metric_func(self, metric_name, y_true, y_pred):
         # y_*: [batch, height, width, num_class]
         # dice
         if metric_name == 'dice':
-            smooth = 1e-8
-            y_pred = tf.nn.softmax(y_pred)
-            intersection = tf.reduce_sum(tf.multiply(y_true, y_pred))
-            union = tf.reduce_sum(y_true) + tf.reduce_sum(y_pred)
-            return 1 - (((2 * intersection) + smooth) / (union + smooth))
+            return self.dice(y_true, y_pred)
+
+        if metric_name == 'neg_dice':
+            return 1 - self.dice(y_true, y_pred)
 
         else:
             assert False, 'metric function ISNOT exist'
