@@ -2,12 +2,12 @@
 auther: leechh
 """
 import os
-import numpy as np
 import tensorflow as tf
-import matplotlib.pyplot as plt
+from tqdm import tqdm
+from math import ceil
 from tools.model import Model
 from tools.preprocess import Preprocess
-from tools.mask import plotgen
+from tools.chunk import chunk
 
 
 class Network(Model, Preprocess):
@@ -63,7 +63,13 @@ class Network(Model, Preprocess):
     def __checkpoint(self, saver, sess, ckpt_dir, num_epoch):
         saver.save(sess, os.path.join(ckpt_dir, f'epoch{num_epoch}', 'model.ckpt'))
 
-    def train(self, ckpt_dir, early_stopping=5, verbose=2, retrain=False):
+    def cal_mean(self, oldmean, oldcount, mean, count):
+        newcount = count + oldcount
+        newmean = (oldcount * oldmean) + (mean * count)
+        return newmean / newcount, newcount
+
+
+    def train(self, ckpt_dir, train_percentage=0.8, early_stopping=5, verbose=2, retrain=False):
         """
 
         :param ckpt_dir: ckpt file storage directory.
@@ -85,6 +91,7 @@ class Network(Model, Preprocess):
                 saver.restore(sess=sess, save_path=self.modelinfo['ckpt'])
             else:
                 self.empty_modelinfo()
+
             # init
             error_rise_count = 0
             self.mkdir(ckpt_dir)
@@ -96,48 +103,53 @@ class Network(Model, Preprocess):
             for epoch_num in range(start_epoch, self.epoch + start_epoch):
 
                 # init
-                loss_epoch = []
-                metric_epoch = []
+                train_loss, train_count = 0, 0
+                valid_metric, valid_count = 0, 0
 
-                # run training optimizer
-                for _ in range(self.num_train_batch):
-                    try:
-                        sess.run(self.opt)
-                    except tf.errors.OutOfRangeError:
-                        break
+                # split train valid
+                data_chunk = chunk(self.count, self.batch_size)
+                num_train_chunk = ceil(train_percentage * data_chunk.__len__())
+                train_chunk = data_chunk.take(num_train_chunk)
 
-                # get valid loss
-                for _ in range(self.num_valid_batch):
-                    try:
-                        metric_epoch.append(sess.run(self.metric))
-                    except tf.errors.OutOfRangeError:
-                        break
-
-                # get training loss
-                for _ in range(self.num_train_batch):
-                    try:
-                        loss_epoch.append(sess.run(self.loss))
-                    except tf.errors.OutOfRangeError:
-                        break
-
-                # get training loss
-                for _ in range(self.num_valid_batch):
-                    try:
-                        sess.run(self.img_origin)
-                    except tf.errors.OutOfRangeError:
-                        break
-
-                # calculate loss and print
-                loss = round(np.mean(loss_epoch), 4)
-                metric = round(np.mean(metric_epoch), 4)
-
-                self.modelinfo['train_loss'].append(loss)
-                self.modelinfo['valid_metrics'].append(metric)
-
+                # tqdm
                 if verbose == 2:
-                    print(f'After {epoch_num} epoch, '
-                          f'train {self.loss_name} is {loss}, '
-                          f'valid {self.metric_name} is {metric}')
+                    pbar = tqdm(train_chunk)
+                else:
+                    pbar = train_chunk
+
+                for batch in pbar:
+                    # run training optimizer & get train loss
+                    try:
+                        _, loss = sess.run((self.opt, self.loss))
+                        train_loss, train_count = self.cal_mean(
+                            train_loss,
+                            train_count,
+                            loss,
+                            batch)
+                    except tf.errors.OutOfRangeError:
+                        break
+                    # valid loss
+                    if train_chunk.__len__() == 0:
+                        for valid_batch in data_chunk:
+                            try:
+                                metric = sess.run(self.metric)
+                                valid_metric, valid_count = self.cal_mean(
+                                    valid_metric,
+                                    valid_count,
+                                    metric,
+                                    valid_batch)
+                            except tf.errors.OutOfRangeError:
+                                break
+                    # description
+                    if verbose == 2:
+                        desc_str = f'epoch {epoch_num},' \
+                                  f' train {self.loss_name} is {round(train_loss, 4)}, ' \
+                                  f'valid {self.metric_name} is {round(valid_metric, 4)}'
+                        pbar.set_description(desc_str)
+
+
+                self.modelinfo['train_loss'].append(train_loss)
+                self.modelinfo['valid_metrics'].append(valid_metric)
 
                 # check point & early stopping
                 self.__checkpoint(saver=saver,

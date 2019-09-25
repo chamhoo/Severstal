@@ -12,23 +12,19 @@ def rle2mask(rle, height, width):
         mask[start-1: start+lengeth-1] = True
     return mask.reshape((height, width, 1), order='F')
 
-def mask2rle(mask):
-    rle = ''
-    lastis0, length = True, 1
-    mask = mask.flatten('F')
-    for idx, val in enumerate(mask):
-        if val != 0:
-            if lastis0:
-                rle += str(idx+1) + ' '
-            else:
-                length += 1
-            lastis0 = False
-        else:
-            if not lastis0:
-                rle += str(length) + ' '
-                length = 1
-            lastis0 = True
-    return rle.strip()
+
+#https://www.kaggle.com/paulorzp/rle-functions-run-lenght-encode-decode
+def mask2rle(img):
+    """
+    img: numpy array, 1 -> mask, 0 -> background
+    Returns run length as string formated
+    """
+    pixels= img.T.flatten()
+    pixels = np.concatenate([[0], pixels, [0]])
+    runs = np.where(pixels[1:] != pixels[:-1])[0] + 1
+    runs[1::2] -= runs[::2]
+    return ' '.join(str(x) for x in runs)
+
 
 
 def plotmask(iminfo, image, figsize):

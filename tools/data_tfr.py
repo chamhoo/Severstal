@@ -5,14 +5,16 @@ import os
 import shutil
 import numpy as np
 import tensorflow as tf
-from tqdm import tqdm
+from tqdm import trange
+from math import ceil
 from tools.data_gen import DataGen
+from tools.chunk import chunk
 
 
 class TFR(DataGen):
     def __init__(self):
         self.__seed = 18473
-        self.random_gen = self._pseudo_random(214013, 2531011)
+        self.random_gen = self._pseudo_random(214013, 2531011, self.__seed)
 
     def seed(self, seed):
         self.__seed = seed
@@ -47,7 +49,7 @@ class TFR(DataGen):
             shutil.rmtree(path)
         os.makedirs(path)
 
-    def write_tfr(self, data_generator, count, tfrpath, feature_dict, shards=1000,
+    def write_tfr(self, data_generator, tfrpath, train_path, feature_dict, shards=1000,
                   compression=None, c_level=None):
         """
 
@@ -62,22 +64,21 @@ class TFR(DataGen):
         :param compression:
         :return:
         """
+        count = self.count(train_path)
         options = self.__compression_tfr(compression, c_level=c_level)
         # base on num_shards & count, build a slice list
         if shards <= 100:
-            num_shards, step = int(shards), int(np.ceil(count/shards))
-        else:
-            num_shards, step = int(np.ceil(count/shards)), int(shards)
+            shards = ceil(count / shards)
 
         # update dir
         self.mkdir(tfrpath)
-
-        for num in range(num_shards):
-            tfr_path = os.path.join(tfrpath, '%03d-of-%03d.tfrecord' % (num, num_shards))
+        chunk_gen = chunk(count, shards)
+        for num, step in enumerate(chunk(count, shards)):
+            tfr_path = os.path.join(tfrpath, '%03d-of-%03d.tfrecord' % (num, chunk_gen.__len__()))
             writer = tf.io.TFRecordWriter(tfr_path, options=options)
             # write TFRecords file.
             try:
-                for _ in tqdm(range(step)):
+                for _ in trange(step):
                     samples = next(data_generator)
                     # build feature
                     feature = {}
@@ -97,13 +98,12 @@ class TFR(DataGen):
             finally:
                 writer.close()
 
-    def _pseudo_random(self, a, b):
+    def _pseudo_random(self, a, b, seed):
         """
         Linear congruential generator
         - https://en.wikipedia.org/wiki/Linear_congruential_generator
         """
         m = 2 ** 32
-        seed = self.__seed
         while True:
             nextseed = (a * seed + b) % m
             yield nextseed
@@ -118,11 +118,11 @@ class TFR(DataGen):
 
         dataset = tf.data.TFRecordDataset(files, compression_type=compression)
         dataset = dataset.map(lambda raw: tf.io.parse_single_example(raw, features=features))
+        dataset = dataset.shuffle(shuffle_buffer, seed=self.__seed)
         dataset = dataset.map(decode_raw)
-        dataset = dataset.shuffle(shuffle_buffer, seed=next(self.random_gen))
         return dataset
 
-    def readtrain(self, rt_params, train_path, valid_percentage, epoch, batch_size, reshape=None, reshape_method=None):
+    def readtrain(self, rt_params, train_path, epoch, batch_size, reshape=None, reshape_method=None):
         # parameter
         self.epoch = epoch
         self.batch_size = batch_size
@@ -131,18 +131,10 @@ class TFR(DataGen):
 
         # read tfrecord & resize
         dataset = self.readtfrecorde(**rt_params)
-
-        # num_valid & count
-        total_count = self.count(train_path)
-        total_batch_pre_epoch = np.ceil(total_count / batch_size)
-        if valid_percentage <= 1:
-            self.num_valid_batch = int(np.ceil(valid_percentage / total_batch_pre_epoch))
-            self.num_train_batch = int(total_batch_pre_epoch - self.num_valid_batch)
-        else:
-            assert False, 'valid_percentage <= 1'
+        self.count = self.count(train_path)
 
         # train & valid dataset
-        dataset = dataset.batch(self.batch_size).repeat(2 * self.epoch)
+        dataset = dataset.batch(self.batch_size).repeat(self.epoch)
         self.iterator = dataset.make_initializable_iterator()
         self.img_origin, self.label = self.iterator.get_next()
         self.img = tf.image.resize(self.img_origin, size=reshape, method=reshape_method)
