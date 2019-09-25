@@ -128,16 +128,16 @@ class Network(Model, Preprocess):
                         break
 
                 # calculate loss and print
-                loss = np.mean(loss_epoch)
-                metric = np.mean(metric_epoch)
+                loss = round(np.mean(loss_epoch), 4)
+                metric = round(np.mean(metric_epoch), 4)
 
                 self.modelinfo['train_loss'].append(loss)
                 self.modelinfo['valid_metrics'].append(metric)
 
                 if verbose == 2:
                     print(f'After {epoch_num} epoch, '
-                          f'train {self.loss_name} is {np.round(loss, 4)}, '
-                          f'valid {self.metric_name} is {np.round(metric, 4)}')
+                          f'train {self.loss_name} is {loss}, '
+                          f'valid {self.metric_name} is {metric}')
 
                 # check point & early stopping
                 self.__checkpoint(saver=saver,
