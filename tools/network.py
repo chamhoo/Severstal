@@ -143,8 +143,8 @@ class Network(Model, Preprocess):
                     # description
                     if verbose == 2:
                         desc_str = f'epoch {epoch_num},' \
-                                  f' train {self.loss_name} is {round(train_loss, 4)}, ' \
-                                  f'valid {self.metric_name} is {round(valid_metric, 4)}'
+                                  f' train {self.loss_name}: {round(train_loss, 4)}, ' \
+                                  f'valid {self.metric_name}: {round(valid_metric, 4)}'
                         pbar.set_description(desc_str)
 
 

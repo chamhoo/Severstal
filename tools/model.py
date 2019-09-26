@@ -118,5 +118,6 @@ class Model(Layers, ModelComponent):
 
             # output
             node = self.conv2d(node, w, b, padding=padding, name='output_conv', rate=0)
+            # node = tf.nn.softmax(node)
             # node = tf.nn.relu(node)
         return node, int(size_h), int(size_w)

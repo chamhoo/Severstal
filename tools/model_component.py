@@ -116,11 +116,11 @@ class ModelComponent(object):
     def metric_func(self, metric_name, y_true, y_pred):
         # y_*: [batch, height, width, num_class]
         # dice
-        if metric_name == 'dice':
-            return self.dice(y_true, y_pred)
-
         if metric_name == 'neg_dice':
             return 1 - self.dice(y_true, y_pred)
+        
+        if metric_name == 'cross_entropy':
+            return tf.losses.softmax_cross_entropy(y_true, y_pred)
 
         else:
             assert False, 'metric function ISNOT exist'
