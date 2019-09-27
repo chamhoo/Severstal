@@ -86,9 +86,9 @@ where $w_{c} : \Omega \to \mathbb{R}$ is the weight map to balance the class fre
 
 其中 $w_{c} : \Omega \to \mathbb{R}$ 是用于平衡类别频率的权重图，$d_{1} : \Omega \to \mathbb{R}$ 表示到最近的细胞边界的距离，$d_{2} : \Omega \to \mathbb{R}$ 表示到第二近的细胞边界的距离，在我们的实验中，我们设置$w_{0} = 10$ 以及 $\sigma \approx 5$ 像素。
 
-In deep networks with many convolutional layers and different paths through the network, a good initialization of the weights is extremely important. Otherwise, parts of the network might give excessive activations, while other parts never contribute.Ideally the initial weights should be adapted such that each feature map in the network has approximately unit variance. For a network with our architecture (alternating convolution and ReLU layers) this can be achieved by drawing the initial weights from a Gaussian distribution with a standard deviation of $\sqrt{2/N}$, where N denotes the number of incoming nodes of one neuron [5]. E.g. for a 3x3 convolution and 64 feature channels in the previous layer $N = 9 \cdot 64 = 576$.
+In deep networks with many convolutional layers and different paths through the network, a good initialization of the weights is extremely important. Otherwise, parts of the network might give excessive activations, while other parts never contribute.Ideally the initial weights should be adapted such that each feature map in the network has approximately unit variance. For a network with our architecture (alternating convolution and ReLU layers) this can be achieved by drawing the initial weights from a Gaussian distribution with a standard deviation of $\sqrt{2/N}$, where N denotes the number of incoming nodes of one neuron [5]. E.g. for a $3 \times 3$ convolution and 64 feature channels in the previous layer $N = 9 \cdot 64 = 576$.
 
-在拥有许多卷积层以及不同路径的深度神经网络中，一个良好的权重初始化是十分重要的。否则，网络的某些部分可能会过度激活，而另一部分完全没有贡献。理想情况之下，应该调整初始权重，使得每一个神经网络中的特征图都有相似的方差。对于具有我们架构的网络（交替卷积与ReLU层）这可以通过标准差$\sqrt{2/N}$的高斯分布来初始化权重，其中$N$代表每一个神经元输入节点的数量。例如，对于前一层有 $3 \times 3$卷积和64的特征通道，$N = 9 \cdot 64 = 576$。
+在拥有许多卷积层以及不同路径的深度神经网络中，一个良好的权重初始化是十分重要的。否则，网络的某些部分可能会过度激活，而另一部分完全没有贡献。理想情况之下，应该调整初始权重，使得每一个神经网络中的特征图都有相似的方差。对于具有我们架构的网络（交替卷积与ReLU层）这可以通过标准差 $\sqrt{2/N}$ 的高斯分布来初始化权重，其中$N$代表每一个神经元输入节点的数量。例如，对于前一层有 $3 \times 3$ 卷积和64的特征通道，$N = 9 \cdot 64 = 576$。
 
 ## 3.1 Data Augmentation
 
