@@ -14,11 +14,3 @@ def decode_img_seg(raw):
     label = tf.reshape(label, [raw['height'], raw['width'], raw['n_class']])
     return img, label
 
-
-def decode_img_seg_test(raw):
-    img = tf.decode_raw(raw['img'], tf.uint8)
-    # convert image dtype
-    img = tf.cast(img, dtype=tf.float32)
-    img = tf.reshape(img, [raw['height'], raw['width'], raw['channels']])
-    return img
-
