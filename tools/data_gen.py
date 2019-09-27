@@ -7,6 +7,7 @@ import cv2
 import copy
 import numpy as np
 import tensorflow as tf
+from glob import glob, iglob
 from time import time
 from functools import reduce
 from tools.mask import rle2mask
@@ -20,8 +21,8 @@ class DataGen(object):
         background = (1 - np.sum(label_arr, axis=2, dtype='bool'))[..., np.newaxis]
         return np.concatenate([label_arr, background], axis=2)
 
-    def __isimg(self, path):
-        return os.path.splitext(path)[1] in ['.png', '.jpg']
+    # def __isimg(self, path):
+    #     return os.path.splitext(path)[1] in ['.png', '.jpg']
 
     def seg_train_gen(self, csv_path, train_path, height, width, col=False, sep=',', n_class=5):
         """
@@ -59,14 +60,5 @@ class DataGen(object):
 
         print(time() - totoaltime)
 
-    def read_test(self, test_path, height, width,):
-        # test generator
-        for path in os.listdir(test_path):
-            if self.__isimg(path):
-                yield {'img': cv2.imread(os.path.join(test_path, path)).astype('uint8').tobytes(),
-                       'height': height,
-                       'width': width,
-                       'channels': 3}
-
     def count(self, path):
-        return reduce(lambda x, y: x+y, [self.__isimg(i) for i in os.listdir(path)])
+        return len(glob(os.path.join(path, '*.jpg')))

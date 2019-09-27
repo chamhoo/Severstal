@@ -109,14 +109,19 @@ class TFR(DataGen):
             yield nextseed
             seed = nextseed
 
-    def readtfrecorde(self, feature_dict, decode_raw, tfr_path, shuffle_buffer, compression):
-        files = tf.io.match_filenames_once(tfr_path)
+    def readtfrecorde(self, feature_dict, decode_raw, tfr_path,
+                      shuffle_buffer, compression, buffer_size=None, num_parallel_reads=None):
+        files = tf.data.Dataset.list_files(tfr_path, shuffle=True, seed=self.__seed)
+        # files = tf.io.match_filenames_once(tfr_path)
 
         features = {}
         for key, _type in feature_dict.items():
             features[key] = self.__fix_len_feature(_type)
 
-        dataset = tf.data.TFRecordDataset(files, compression_type=compression)
+        dataset = tf.data.TFRecordDataset(files,
+                                          compression_type=compression,
+                                          buffer_size=buffer_size,
+                                          num_parallel_reads=num_parallel_reads)
         dataset = dataset.map(lambda raw: tf.io.parse_single_example(raw, features=features))
         dataset = dataset.shuffle(shuffle_buffer, seed=self.__seed)
         dataset = dataset.map(decode_raw)
@@ -131,7 +136,7 @@ class TFR(DataGen):
 
         # read tfrecord & resize
         dataset = self.readtfrecorde(**rt_params)
-        self.count = self.count(train_path)
+        self.traincount = self.count(train_path)
 
         # train & valid dataset
         dataset = dataset.batch(self.batch_size).repeat(self.epoch)
