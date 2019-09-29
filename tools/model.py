@@ -1,9 +1,54 @@
 import numpy as np
 import tensorflow as tf
 from tools.model_component import Layers, ModelComponent
+from tools.preprocess import Preprocess
 
 
-class Model(Layers, ModelComponent):
+class Model(Layers, ModelComponent, Preprocess):
+    def select_model(self, model):
+        if model == 'unet':
+            return self.unet
+        else:
+            assert False, 'model ISNOT exist'
+
+    def model(self, model_name, model_params,
+              loss, metric, optimizer, rate):
+
+        # parameter
+        self.rate = rate
+        self.loss_name = loss
+        self.metric_name = metric
+        self.optimizier_name = optimizer
+        self.model_name = model_name
+        self.model_param = model_params
+
+        # select model
+        model_params['height'], model_params['width'] = self.reshape
+        model = self.select_model(model_name)
+
+        # train
+        y_pred, y_h, y_w = model(x=self.img, **model_params)
+
+        y_true = tf.image.resize(
+            self.label,
+            size=[y_h, y_w],
+            method=self.reshape_method)
+
+        self.loss = self.metric_func(
+            metric_name=self.loss_name,
+            y_true=y_true,
+            y_pred=y_pred)
+
+        self.metric = self.metric_func(
+            metric_name=self.metric_name,
+            y_true=y_true,
+            y_pred=y_pred)
+
+        self.opt = self.optimizier(
+            optimizier_name=optimizer,
+            learning_rate=rate,
+            loss=self.loss)
+
     def unet(self, x, height, width, num_layers, feature_growth_rate, n_class, channels, padding, dropout_rate):
         node = x / 255
         down_node = {}

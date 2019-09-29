@@ -113,6 +113,21 @@ class ModelComponent(object):
         union = tf.reduce_sum(y_true) + tf.reduce_sum(y_pred)
         return ((2 * intersection) + smooth) / (union + smooth)
 
+    def dice_severstal(self, y_true, y_pred):
+        smooth = 1e-8
+        y_pred = tf.nn.softmax(y_pred)
+        intersection = tf.reduce_sum(tf.multiply(y_true, y_pred), axis=[0, 1, 2])
+        union = tf.reduce_sum(y_true, axis=[0, 1, 2]) \
+                + tf.reduce_sum(y_pred, axis=[0, 1, 2])
+        return tf.reduce_mean(
+            tf.slice(((2 * intersection) + smooth) / (union + smooth), [0], [4]))
+
+    def ce_severstal(self, y_true, y_pred):
+        y_pred = tf.nn.softmax(y_pred)
+        y_pred = tf.slice(y_pred, [0, 0, 0, 0], [-1, -1, -1, 4])
+        y_true = tf.slice(y_true, [0, 0, 0, 0], [-1, -1, -1, 4])
+
+
     def metric_func(self, metric_name, y_true, y_pred):
         # y_*: [batch, height, width, num_class]
         # dice
@@ -121,6 +136,8 @@ class ModelComponent(object):
         
         if metric_name == 'cross_entropy':
             return tf.losses.softmax_cross_entropy(y_true, y_pred)
+
+        if metric_name == ''
 
         else:
             assert False, 'metric function ISNOT exist'
