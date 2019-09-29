@@ -145,6 +145,7 @@ class Network(Model, Preprocess):
             for epoch_num in range(start_epoch, self.epoch + start_epoch):
 
                 # init
+                best_epoch = 0
                 train_loss, train_count = 0, 0
                 valid_metric, valid_count = 0, 0
 
@@ -193,11 +194,7 @@ class Network(Model, Preprocess):
                 self.modelinfo['valid_metrics'].append(valid_metric)
 
                 # check point & early stopping
-                self.__checkpoint(saver=saver,
-                                  sess=sess,
-                                  ckpt_dir=ckpt_dir,
-                                  num_epoch=epoch_num)
-
+                old_best_epoch = best_epoch
                 if early_stopping:
                     metrics = self.modelinfo['valid_metrics']
                     best_epoch = metrics.index(min(metrics))
@@ -208,6 +205,14 @@ class Network(Model, Preprocess):
                 else:
                     best_epoch = epoch_num
 
+                if old_best_epoch != best_epoch:
+                    if old_best_epoch != 0:
+                        shutil.rmtree(os.path.join(ckpt_dir, f'epoch{old_best_epoch}'))
+                    self.__checkpoint(saver=saver,
+                                      sess=sess,
+                                      ckpt_dir=ckpt_dir,
+                                      num_epoch=epoch_num)
+                    
             # final print
             if verbose in [1, 2]:
                 print(f'best epoch is {best_epoch}, '

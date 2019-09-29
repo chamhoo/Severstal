@@ -42,7 +42,7 @@ class Layers(object):
 
     def conv2d(self, x, w, b, padding='SAME', name='conv2d', rate=0.25):
         with tf.name_scope(name):
-            conv = tf.nn.conv2d(x, w, strides=1, padding=padding)
+            conv = tf.nn.conv2d(x, w, strides=[1, 1, 1, 1], padding=padding)
             conv = tf.nn.bias_add(conv, b)
             return tf.nn.dropout(conv, rate=rate)
 
