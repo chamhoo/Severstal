@@ -12,7 +12,7 @@ class Model(Layers, ModelComponent, Preprocess):
             assert False, 'model ISNOT exist'
 
     def model(self, model_name, model_params,
-              loss, metric, optimizer, rate):
+              loss, metric, optimizer, rate, optimizer_params=None):
 
         # parameter
         self.rate = rate
@@ -29,20 +29,23 @@ class Model(Layers, ModelComponent, Preprocess):
         # train
         y_pred, y_h, y_w = model(x=self.img, **model_params)
 
-        y_true = tf.image.resize(
-            self.label,
-            size=[y_h, y_w],
+        y_true = self.label
+        y_pred = tf.image.resize(
+            y_pred,
+            size=[self.origion_shape[0], self.origion_shape[1]],
             method=self.reshape_method)
 
         self.loss = self.metric_func(
             metric_name=self.loss_name,
             y_true=y_true,
-            y_pred=y_pred)
+            y_pred=y_pred,
+            params=optimizer_params)
 
         self.metric = self.metric_func(
             metric_name=self.metric_name,
             y_true=y_true,
-            y_pred=y_pred)
+            y_pred=y_pred,
+            params=optimizer_params)
 
         self.opt = self.optimizier(
             optimizier_name=optimizer,

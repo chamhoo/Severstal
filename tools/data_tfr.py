@@ -128,6 +128,12 @@ class TFR(DataGen):
         return dataset
 
     def readtrain(self, rt_params, train_path, epoch, batch_size, reshape=None, reshape_method=None):
+        """
+        AREA = 3
+        BICUBIC = 2
+        BILINEAR = 0
+        NEAREST_NEIGHBOR = 1
+        """
         # parameter
         self.epoch = epoch
         self.batch_size = batch_size
@@ -137,6 +143,7 @@ class TFR(DataGen):
         # read tfrecord & resize
         dataset = self.readtfrecorde(**rt_params)
         self.traincount = self.count(train_path)
+        self.origion_shape = self.mkshape(train_path)
 
         # train & valid dataset
         dataset = dataset.batch(self.batch_size).repeat(self.epoch)
@@ -144,25 +151,11 @@ class TFR(DataGen):
         self.img_origin, self.label = self.iterator.get_next()
         self.img = tf.image.resize(self.img_origin, size=reshape, method=reshape_method)
 
-    def readtest(self, rt_params, test_path, batch_size, reshape=None, reshape_method=None):
-        # count & read records
-        self.test_count = self.count(test_path)
-        test_dataset = self.readtfrecorde(**rt_params)
-
-        # test dataset
-        self.test_iterator = test_dataset.make_initializable_iterator()
-        self.test_img = self.test_iterator.get_next()
-
     def resize(self, dataset, size, method):
-        """
-        AREA = 3
-        BICUBIC = 2
-        BILINEAR = 0
-        NEAREST_NEIGHBOR = 1
-        """
         dataset = dataset.map(lambda img, label: (
             tf.image.resize(img, size=size, method=method), label))
         return dataset
+
 
 
 

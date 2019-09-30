@@ -119,25 +119,56 @@ class ModelComponent(object):
         intersection = tf.reduce_sum(tf.multiply(y_true, y_pred), axis=[0, 1, 2])
         union = tf.reduce_sum(y_true, axis=[0, 1, 2]) \
                 + tf.reduce_sum(y_pred, axis=[0, 1, 2])
-        return tf.reduce_mean(
+        return - tf.reduce_mean(
             tf.slice(((2 * intersection) + smooth) / (union + smooth), [0], [4]))
 
-    def ce_severstal(self, y_true, y_pred):
+    def bce_severstal(self, y_true, y_pred):
         y_pred = tf.nn.softmax(y_pred)
         y_pred = tf.slice(y_pred, [0, 0, 0, 0], [-1, -1, -1, 4])
         y_true = tf.slice(y_true, [0, 0, 0, 0], [-1, -1, -1, 4])
 
+        yadd = tf.multiply(y_true, tf.math.log1p(y_pred))
+        ysub = tf.multiply((1 - y_true), tf.math.log1p((1 - y_pred)))
+        return tf.reduce_mean(tf.reduce_sum((-(yadd + ysub)), axis=[0, 1, 2]))
 
-    def metric_func(self, metric_name, y_true, y_pred):
+    def focal_severstal(self, y_true, y_pred, alpha=0.5, gamma=2):
+        # - https://github.com/ailias/Focal-Loss-implement-on-Tensorflow/blob/master/focal_loss.py
+        y_pred = tf.nn.softmax(y_pred)
+        y_pred = tf.slice(y_pred, [0, 0, 0, 0], [-1, -1, -1, 4])
+        y_true = tf.slice(y_true, [0, 0, 0, 0], [-1, -1, -1, 4])
+        zeros = tf.zeros_like(y_pred, dtype=y_pred.dtype)
+
+        # For poitive prediction, only need consider front part loss, back part is 0;
+        # target_tensor > zeros <=> z=1, so poitive coefficient = z - p.
+        pos_p_sub = tf.where(y_true > zeros, y_true - y_pred, zeros)
+        neg_p_sub = tf.where(y_true > zeros, zeros, y_pred)
+        # For negative prediction, only need consider back part loss, front part is 0;
+        # target_tensor > zeros <=> z=1, so negative coefficient = 0.
+        per_entry_cross_ent = - alpha * (pos_p_sub ** gamma) * tf.log(tf.clip_by_value(y_pred, 1e-8, 1.0)) \
+                              - (1 - alpha) * (neg_p_sub ** gamma) * tf.log(
+            tf.clip_by_value(1.0 - y_pred, 1e-8, 1.0))
+        return tf.reduce_mean(tf.reduce_sum(per_entry_cross_ent, axis=[0, 1, 2]))
+
+    def comboo_loss(self, y_true, y_pred, params):
+        loss = tf.constant(0.)
+        for metric_name, weight in params.items():
+            if weight != 0:
+                loss += (weight * self.metric_func(metric_name, y_true, y_pred))
+        return loss
+
+    def metric_func(self, metric_name, y_true, y_pred, params=None):
         # y_*: [batch, height, width, num_class]
         # dice
-        if metric_name == 'neg_dice':
-            return 1 - self.dice(y_true, y_pred)
+        if metric_name == 'dice':
+            return self.dice(y_true, y_pred)
         
-        if metric_name == 'cross_entropy':
-            return tf.losses.softmax_cross_entropy(y_true, y_pred)
+        if metric_name == 'bce':
+            return self.bce_severstal(y_true, y_pred)
 
-        if metric_name == ''
+        if metric_name == 'focal':
+            return self.metric_func(y_true, y_pred)
 
+        if metric_name == 'comboo_loss':
+            return self.comboo_loss(y_true, y_pred, params)
         else:
             assert False, 'metric function ISNOT exist'

@@ -24,10 +24,11 @@ class DataGen(object):
     # def __isimg(self, path):
     #     return os.path.splitext(path)[1] in ['.png', '.jpg']
 
-    def seg_train_gen(self, csv_path, train_path, height, width, col=False, sep=',', n_class=5):
+    def seg_train_gen(self, csv_path, train_path, col=False, sep=',', n_class=5):
         """
         read csv file to generator
         :param csv_path: str, Path of the csv file.
+        :param train_path:
         :param col: False(Bool) or list, if False, This mean that the col information is
          contained in the csv file. if not contained, You need to set col_name manually.
         :param sep: str, default ',' Delimiter to use.
@@ -36,6 +37,8 @@ class DataGen(object):
         col = col
         numlen = 0
         totoaltime = time()
+
+        height, width, _ = self.mkshape(train_path)
 
         csv_gen_init = {'img': None, 'label': [],
                         'height': height, 'width': width,
@@ -62,3 +65,6 @@ class DataGen(object):
 
     def count(self, path):
         return len(glob(os.path.join(path, '*.jpg')))
+
+    def mkshape(self, path):
+        return cv2.imread(glob(os.path.join(path, '*.jpg'))[0]).shape
