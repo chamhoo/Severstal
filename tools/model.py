@@ -9,7 +9,7 @@ class Model(Layers, ModelComponent, Preprocess):
         if model == 'unet':
             return self.unet
         else:
-            assert False, 'model ISNOT exist'
+            assert False, 'arch ISNOT exist'
 
     def model(self, model_name, model_params,
               loss, metric, optimizer, rate, optimizer_params=None):
@@ -22,7 +22,7 @@ class Model(Layers, ModelComponent, Preprocess):
         self.model_name = model_name
         self.model_param = model_params
 
-        # select model
+        # select arch
         model_params['height'], model_params['width'] = self.reshape
         model = self.select_model(model_name)
 

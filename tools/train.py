@@ -23,7 +23,7 @@ class Train(Model):
         }
 
     def __checkpoint(self, saver, sess, ckpt_dir, num_epoch):
-        saver.save(sess, os.path.join(ckpt_dir, f'epoch{num_epoch}', 'model.ckpt'))
+        saver.save(sess, os.path.join(ckpt_dir, f'epoch{num_epoch}', 'arch.ckpt'))
 
     def cal_mean(self, oldmean, oldcount, mean, count):
         newcount = count + oldcount
@@ -40,7 +40,7 @@ class Train(Model):
         :param verbose: 0, 1, 2, Print information level.
                0=silent, 1=just finally score, 2=progress bar.
         :param retrain: bool, default False, Whether to train
-               again on the basis of a trained model, if yes,
+               again on the basis of a trained arch, if yes,
                please select True, otherwise False.
         """
         # parameter
@@ -145,7 +145,7 @@ class Train(Model):
                       f'valid score is {self.modelinfo["valid_metrics"][best_epoch]}')
 
             # write modelinfo
-            self.modelinfo['ckpt'] = os.path.join(ckpt_dir, f'epoch{best_epoch}', 'model.ckpt')
+            self.modelinfo['ckpt'] = os.path.join(ckpt_dir, f'epoch{best_epoch}', 'arch.ckpt')
             self.modelinfo['start_epoch'] = best_epoch + 1
             self.modelinfo['train_loss'] = self.modelinfo['train_loss'][: best_epoch + 1]
             self.modelinfo['valid_metrics'] = self.modelinfo['valid_metrics'][: best_epoch + 1]

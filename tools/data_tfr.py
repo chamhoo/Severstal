@@ -151,12 +151,6 @@ class TFR(DataGen):
         self.img_origin, self.label = self.iterator.get_next()
         self.img = tf.image.resize(self.img_origin, size=reshape, method=reshape_method)
 
-    def resize(self, dataset, size, method):
-        dataset = dataset.map(lambda img, label: (
-            tf.image.resize(img, size=size, method=method), label))
-        return dataset
-
-
 
 
 
