@@ -7,8 +7,8 @@ import numpy as np
 import tensorflow as tf
 from tqdm import trange
 from math import ceil
-from tools.data_gen import DataGen
-from tools.chunk import chunk
+from aibox.data_gen import DataGen
+from aibox.chunk import chunk
 
 
 class TFR(DataGen):

@@ -3,7 +3,7 @@ auther: LeeCHH
 """
 import numpy as np
 import tensorflow as tf
-from tools.data_tfr import TFR
+from aibox.data_tfr import TFR
 
 
 class Preprocess(TFR):

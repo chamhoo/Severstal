@@ -4,7 +4,7 @@ auther: leechh
 import os
 import shutil
 import numpy as np
-from tools.train import Train
+from aibox.train import Train
 
 
 class CV(Train):

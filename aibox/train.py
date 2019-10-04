@@ -8,9 +8,9 @@ import tensorflow as tf
 from tqdm import tqdm
 from math import ceil
 
-from tools.model import Model
-from tools.chunk import chunk
-from tools.logging import logging
+from aibox.model import Model
+from aibox.chunk import chunk
+from aibox.logging import logging
 
 
 class Train(Model):

@@ -1,7 +1,7 @@
 import numpy as np
 import tensorflow as tf
-from tools.model_component import Layers, ModelComponent
-from tools.preprocess import Preprocess
+from aibox.model_component import Layers, ModelComponent
+from aibox.preprocess import Preprocess
 
 
 class Model(Layers, ModelComponent, Preprocess):

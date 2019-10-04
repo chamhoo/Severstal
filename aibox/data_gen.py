@@ -10,7 +10,7 @@ import tensorflow as tf
 from glob import glob, iglob
 from time import time
 from functools import reduce
-from tools.mask import rle2mask
+from aibox.mask import rle2mask
 
 
 class DataGen(object):
