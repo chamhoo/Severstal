@@ -21,6 +21,7 @@ tmp/
 
 # MacOS support
 */.DS_Store
+.DS_Store
 
 # log
 *.log

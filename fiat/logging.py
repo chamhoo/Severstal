@@ -8,10 +8,9 @@ from functools import reduce
 
 class logging(object):
     def __init__(self, path=None):
-        self.log_col = 'id;time;name;optimizer;rate;' \
-                  'model_params;ckpt_path;' \
-                  'loss_name;loss;metric_name;metric;' \
-                  'epoch;batch_size;reshape;reshape_method'
+        self.log_col = 'id;time;rate;recorder;' \
+                       'best_epoch;batch_size;' \
+                       'reshape;reshape_method'
 
         if path is None:
             self.path = ['training.log']
