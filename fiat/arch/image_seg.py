@@ -43,8 +43,8 @@ def unet(num_layers=5, feature_growth_rate=64, n_class=1, channels=3,
                     weight_param={'stddev': stddev, 'mean': 0.},
                     name=f'w2_{layer}')
 
-                b1 = Variable.bias_variable(value=0, shape=[features], name=f'b1_{layer}')
-                b2 = Variable.bias_variable(value=0, shape=[features], name=f'b2_{layer}')
+                b1 = Variable.bias_variable(value=0., shape=[features], name=f'b1_{layer}')
+                b2 = Variable.bias_variable(value=0., shape=[features], name=f'b2_{layer}')
 
                 # down conv
                 node = Layers.conv2d(node, w1, b1, padding=padding, name=f'conv1_{layer}', rate=dropout_rate)
@@ -83,9 +83,9 @@ def unet(num_layers=5, feature_growth_rate=64, n_class=1, channels=3,
                         weight_param={'stddev': stddev, 'mean': 0.},
                         name='w2')
 
-                bu = Variable.bias_variable(value=0, shape=[features], name='bu')
-                b1 = Variable.bias_variable(value=0, shape=[features], name='b1')
-                b2 = Variable.bias_variable(value=0, shape=[features], name='b2')
+                bu = Variable.bias_variable(value=0., shape=[features], name='bu')
+                b1 = Variable.bias_variable(value=0., shape=[features], name='b1')
+                b2 = Variable.bias_variable(value=0., shape=[features], name='b2')
 
                 # de conv
                 node = Layers.deconv2d(node, wu, bu, strides=2, padding=padding, name='upconv')
@@ -109,13 +109,18 @@ def unet(num_layers=5, feature_growth_rate=64, n_class=1, channels=3,
             b = Variable.bias_variable(value=0, shape=[n_class], name='output_b')
 
             # output
-            node = Layers.conv2d(node, w, b, padding=padding, name='output_conv', rate=0)
-            if active == 'sigmoid':
-                node = tf.nn.sigmoid(node)
+            node = Layers.conv2d(node, w, b, padding=padding, name='output_conv', rate=0.)
+            
+            if active is None:
+                node_out = node
+            elif active == 'sigmoid':
+                node_out = tf.nn.sigmoid(node)
             elif active == 'softmax':
-                node = tf.nn.softmax(node)
+                node_out = tf.nn.softmax(node)
+            elif active == 'tanh':
+                node_out == tf.keras.activations.tanh(node)
 
-        return node
+        return node_out, node
     return model
 
 
@@ -216,10 +221,16 @@ def resunet_arch(reslayer, numlayers='50', numstages=5, channels=64,
                 name='output_w')
             b_output = Variable.bias_variable(value=0, shape=[n_class], name='output_b')
             node = Layers.conv2d(node, w_output, b_output, padding=padding, name='output_conv', rate=0)
-
-            if active == 'sigmoid':
-                node = tf.nn.sigmoid(node)
+            
+            if active is None:
+                node_out = node
+            elif active == 'sigmoid':
+                node_out = tf.nn.sigmoid(node)
             elif active == 'softmax':
-                node = tf.nn.softmax(node)
-        return node
+                node_out = tf.nn.softmax(node)
+            elif active == 'tanh':
+                node_out = tf.keras.activations.tanh(node)              
+            else:
+                assert False, 'active is not exist'
+        return node_out, node
     return model

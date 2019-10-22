@@ -138,7 +138,6 @@ class TFR(object):
             step = int(self.shards / split)
             idx_dict['valid'] = set([step*valid+i+1 for i in range(step)])
             idx_dict['train'] = set(range(1, self.shards+1)) - idx_dict['valid']
-
             for idx, val in idx_dict.items():
                 files = tf.data.Dataset.list_files([self.tfrecordname(i) for i in val], shuffle=True, seed=seed)
                 # features
@@ -155,7 +154,7 @@ class TFR(object):
                 dataset = dataset.map(decode_raw)
 
                 # DataAugment
-                if (idx == 'train') & (dataset is not None):
+                if (idx == 'train') & (augment is not None):
                     if type(augment) is list:
                         for subfunc in augment:
                             dataset = subfunc(dataset)

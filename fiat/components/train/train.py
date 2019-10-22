@@ -5,7 +5,7 @@ import os
 
 
 def empty_recorder():
-    return {'train': [2 ** 32], 'valid': [2 ** 32]}
+    return {'train': [-(2 ** 32)], 'valid': [-(2 ** 32)]}
 
 
 def checkpoint(saver, sess, ckpt_dir, num_epoch):

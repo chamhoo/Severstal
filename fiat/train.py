@@ -12,6 +12,7 @@ from fiat.chunk import chunk
 from fiat.logging import logging
 from fiat.os import mkdir
 from fiat.components.train.train import empty_recorder, checkpoint, cal_mean
+from fiat.losses import lossfromname
 from fiat.metric import metricfromname, dice
 from fiat.optimizer import optfromname
 from fiat.data import TFR
@@ -40,7 +41,7 @@ def train(arch, datafunc, loss, metric, optimizer, rate, epoch=1, batch_size=32,
     def back_operation():
         with tf.name_scope('backpropagation'):
             if type(loss) is str:
-                loss_back = metricfromname(loss, y_true, y_pred)
+                loss_back = lossfromname(loss, y_true, y_pred)
             else:
                 loss_back = loss(y_true, y_pred)
             # opt
@@ -76,7 +77,7 @@ def train(arch, datafunc, loss, metric, optimizer, rate, epoch=1, batch_size=32,
         img = tf.image.resize(img, size=reshape, method=reshape_method)
 
     # arch
-    y_pred = arch(img)
+    y_pred, _ = arch(img)
     y_true = label
     shape = tf.shape(y_pred)
     y_true = tf.image.resize(y_true, size=[shape[1], shape[2]], method=reshape_method)
@@ -88,9 +89,9 @@ def train(arch, datafunc, loss, metric, optimizer, rate, epoch=1, batch_size=32,
     if distrainable:
         trainable = [i for i in tf.trainable_variables() if i.name.split('/')[0].split('_')[-1] not in distrainable]
 
-        saver = tf.train.Saver(trainable)
+        saver = tf.train.Saver(trainable, max_to_keep=epoch)
     else:
-        saver = tf.train.Saver()
+        saver = tf.train.Saver(max_to_keep=epoch)
     with tf.Session() as sess:
 
         # init
@@ -167,7 +168,7 @@ def train(arch, datafunc, loss, metric, optimizer, rate, epoch=1, batch_size=32,
             # check point & early stopping
             old_best_epoch = best_epoch
             metrics = recorder['valid']
-            new_best_epoch = metrics.index(min(metrics))
+            new_best_epoch = metrics.index(max(metrics))
             if old_best_epoch != new_best_epoch:
                 best_epoch = new_best_epoch
                 checkpoint(saver=saver, sess=sess, ckpt_dir=ckpt_path, num_epoch=epoch_num)

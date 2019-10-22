@@ -220,7 +220,7 @@ class ResNet(ResNetBlock):
 
 class ResNextBlock(ResLayers):
 
-    def resnext_block(self, c=4):   # c=32
+    def resnext_block(self, c=32):   # c=32
         node_lst = []
         if self.num_blocklayer == 2:
             output_c = int(self.output_c / c)
@@ -269,7 +269,7 @@ class ResNextBlock(ResLayers):
                         type_name='truncated_normal',
                         weight_param={'stddev': Variable.cal_std(1, output_c / 2), 'mean': 0.},
                         name='w1')
-
+              
                     w2 = Variable.weight_variable(
                         shape=[3, 3, int(output_c / 2), int(output_c / 2)],  # [filter, filter, input, output]
                         type_name='truncated_normal',
@@ -285,14 +285,14 @@ class ResNextBlock(ResLayers):
                         b=b1,
                         padding='VALID',
                         rate=self.rate,
-                        strides=self.s)
+                        strides=self.s, name='conv1')
                     node = tf.nn.relu(node)
                     node = Layers.conv2d_batch_norm(
                         x=node,
                         w=w2,
                         b=b2,
                         padding='SAME',
-                        rate=self.rate)
+                        rate=self.rate, name='conv2')
                     node = tf.nn.relu(node)
                     node_lst.append(node)
 
@@ -300,7 +300,7 @@ class ResNextBlock(ResLayers):
             node = tf.concat(node_lst, axis=3)
 
             w3 = Variable.weight_variable(
-                shape=[1, 1, int(output_c / 2), self.output_c],  # [filter, filter, input, output]
+                shape=[1, 1, int(output_c * c / 2), self.output_c],  # [filter, filter, input, output]
                 type_name='truncated_normal',
                 weight_param={'stddev': Variable.cal_std(1, self.output_c), 'mean': 0.},
                 name='w3')
@@ -326,7 +326,7 @@ class ResNext(ResNextBlock):
         return self.node
 
 
-def senet(node, output_c, r=16):  # r=16
+def senet(node, output_c, r=4):  # r=16
     with tf.name_scope('senet'):
         # Squeeze
         node = tf.math.reduce_mean(node, axis=[1, 2], keepdims=False)  # node [batch, 1, 1, c]
@@ -351,6 +351,7 @@ def senet(node, output_c, r=16):  # r=16
         node = tf.add(tf.matmul(node, w1), b1)
         node = tf.nn.relu(node)
         node = tf.add(tf.matmul(node, w2), b2)
+        node = tf.reshape(node, [-1, 1, 1, output_c])
     return tf.math.sigmoid(node)   # [batch_size, c]
 
 
